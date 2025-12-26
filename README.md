@@ -1,1 +1,1 @@
-# EarnTrack
+# Paytick
