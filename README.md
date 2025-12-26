@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  English | <a href="README.zh-CN.md">简体中文</a>
+  <a href="https://github.com/miniLV/Paytick/releases">Download Latest DMG</a> | English | <a href="README.zh-CN.md">简体中文</a>
 </p>
 
 <p align="center">
@@ -68,10 +68,19 @@ Coworker walking by? One-click to activate **PRIVACY.SYS**.
 
 ---
 
-## 🛡 Privacy Policy
+## 🛡 Privacy & Security
 
 *   **100% Local Storage**: All salary and work data are stored locally on your macOS, no internet, no uploads, no tracking.
+*   **Apple Notarized**: This project integrates an automated GitHub Actions signing and notarization workflow. Released DMGs are scanned by Apple for security, ensuring no malware and allowing users to double-click and run directly.
 *   **Open & Transparent**: You can audit the code anytime to ensure total privacy.
+
+---
+
+## 🛠 Installation
+
+1.  Go to the [Releases](https://github.com/miniLV/Paytick/releases) page and download the latest `Paytick.dmg`.
+2.  Open the DMG and drag Paytick to your **Applications** folder.
+3.  **First Launch**: Double-click the icon to start. If macOS shows a security warning (for unnotarized versions), right-click the icon and select "Open."
 
 ---
 

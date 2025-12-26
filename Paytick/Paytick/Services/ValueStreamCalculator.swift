@@ -1,7 +1,7 @@
 import Foundation
 import Combine
 
-// MARK: - Value Stream 核心计算器
+// MARK: - Value Stream Core Calculator
 class ValueStreamCalculator: ObservableObject {
     
     // MARK: - Published Properties
@@ -19,7 +19,7 @@ class ValueStreamCalculator: ObservableObject {
     private var timer: Timer?
     private let calendar = Calendar.current
     
-    // 用户输入的配置
+    // User Input Configuration
     private var monthlySalary: Double = 0
     private var workDaysPerMonth: Int = 22
     private var dailyHours: Double = 8
@@ -51,9 +51,9 @@ class ValueStreamCalculator: ObservableObject {
         updateRealTimeValues()
     }
     
-    // MARK: - Core Calculations (按照 Gemini 规格)
+    // MARK: - Core Calculations (per Gemini specification)
     private func calculateBaseValues() {
-        // 计算每分钟价值 (Value/Min)
+        // Calculate value per minute (Value/Min)
         let dailyIncome = monthlySalary / Double(workDaysPerMonth)
         valuePerMinute = dailyIncome / (dailyHours * 60)
     }
@@ -61,19 +61,19 @@ class ValueStreamCalculator: ObservableObject {
     private func updateRealTimeValues() {
         let now = Date()
         
-        // 更新工作状态
+        // Update work status
         updateWorkStatus(now)
         
-        // 计算今日实际工作时间
+        // Calculate actual work time today
         timeElapsedInMinutes = calculateTodayWorkedMinutes(now)
         
-        // 今日实时收入 = 今日工作分钟数 * 分钟价值
+        // Today's live income = today's worked minutes * value per minute
         liveTickerValue = calculateTodayIncome(now)
         
-        // 今日进度计算
+        // Today's progress calculation
         todayProgress = calculateTodayProgress()
         
-        // 计算加班时间和收入
+        // Calculate overtime duration and income
         calculateOvertimeStatus(now)
     }
     
@@ -82,7 +82,7 @@ class ValueStreamCalculator: ObservableObject {
         guard let schedule = workSchedule else { return 0.0 }
         
         let weekday = getCurrentWeekday(time)
-        // 如果不是工作日，返回 0
+        // If not a workday, return 0
         if !schedule.workdays.contains(weekday) {
             return 0.0
         }
@@ -93,26 +93,26 @@ class ValueStreamCalculator: ObservableObject {
         let lunchStartMinutes = getTimeInMinutes(schedule.lunchStartTime)
         let lunchEndMinutes = getTimeInMinutes(schedule.lunchEndTime)
         
-        // 如果还未开始工作
+        // If work hasn't started yet
         if currentTimeMinutes < startTimeMinutes {
             return 0.0
         }
         
-        // 计算实际工作时间，排除午餐
+        // Calculate actual worked minutes, excluding lunch
         var workedMinutes = 0.0
         
         if currentTimeMinutes <= endTimeMinutes {
-            // 在正常工作时间内
+            // Within normal work hours
             workedMinutes = currentTimeMinutes - startTimeMinutes
             
-            // 减去午餐时间
+            // Deduct lunch time
             if currentTimeMinutes > lunchEndMinutes {
                 workedMinutes -= (lunchEndMinutes - lunchStartMinutes)
             } else if currentTimeMinutes > lunchStartMinutes {
                 workedMinutes -= (currentTimeMinutes - lunchStartMinutes)
             }
         } else {
-            // 已过正常工作时间（在加班）
+            // Past normal work hours (overtime)
             workedMinutes = endTimeMinutes - startTimeMinutes - (lunchEndMinutes - lunchStartMinutes)
         }
         
@@ -123,11 +123,11 @@ class ValueStreamCalculator: ObservableObject {
     private func calculateTodayIncome(_ time: Date) -> Double {
         let todayWorkedMinutes = calculateTodayWorkedMinutes(time)
         
-        // 正常工作时间收入
+        // Income from normal work hours
         let normalIncome = todayWorkedMinutes * valuePerMinute
         
-        // 如果在加班，加班部分收入可能不同（这里暂时用同样费率）
-        // 如果需要可以设置不同的加班费率
+        // If overtime, overtime income rate might differ (currently using same rate)
+        // Optionally set different overtime rates here
         return normalIncome
     }
     
@@ -135,7 +135,7 @@ class ValueStreamCalculator: ObservableObject {
         let now = Date()
         let startOfMonth = calendar.dateInterval(of: .month, for: now)?.start ?? now
         let elapsed = now.timeIntervalSince(startOfMonth)
-        return elapsed / 60.0 // 转换为分钟
+        return elapsed / 60.0 // Convert to minutes
     }
     
     private func calculateTodayProgress() -> Double {
@@ -144,7 +144,7 @@ class ValueStreamCalculator: ObservableObject {
         let now = Date()
         let weekday = getCurrentWeekday(now)
         
-        // 如果不是工作日，返回 0
+        // If not a workday, return 0
         if !schedule.workdays.contains(weekday) {
             return 0.0
         }
@@ -155,25 +155,25 @@ class ValueStreamCalculator: ObservableObject {
         let lunchStartMinutes = getTimeInMinutes(schedule.lunchStartTime)
         let lunchEndMinutes = getTimeInMinutes(schedule.lunchEndTime)
         
-        // 如果还未到工作时间，返回 0
+        // If work hasn't started yet, return 0
         if currentTimeMinutes < startTimeMinutes {
             return 0.0
         }
         
-        // 计算已工作时间（排除午餐时间）
+        // Calculate worked time (excluding lunch)
         var workedMinutes = currentTimeMinutes - startTimeMinutes
         
-        // 如果已过午餐时间，减去午餐时长
+        // Deduct lunch duration if lunch time has passed
         if currentTimeMinutes > lunchEndMinutes {
             workedMinutes -= (lunchEndMinutes - lunchStartMinutes)
         } else if currentTimeMinutes >= lunchStartMinutes {
             workedMinutes -= (currentTimeMinutes - lunchStartMinutes)
         }
         
-        // 总工作时长
+        // Total work duration
         let totalWorkMinutes = schedule.totalWorkMinutesPerDay
         
-        // 进度百分比
+        // Progress percentage
         let progress = max(0, workedMinutes) / totalWorkMinutes
         return min(progress, 1.0)
     }
@@ -241,12 +241,12 @@ class ValueStreamCalculator: ObservableObject {
         let lunchEndMinutes = getTimeInMinutes(schedule.lunchEndTime)
         
         if currentTimeMinutes > endTimeMinutes {
-            // 在加班时间
+            // During overtime
             isOvertime = true
             overtimeMinutes = currentTimeMinutes - endTimeMinutes
             
-            // 如果加班期间包含了晚餐时间，可能需要扣除
-            // 这里暂时简单处理，直接计算加班收入
+            // Deduct dinner time during overtime if needed
+            // Simplified handling: calculate overtime income directly
             overtimeIncome = overtimeMinutes * valuePerMinute
         } else {
             isOvertime = false
@@ -282,7 +282,7 @@ class ValueStreamCalculator: ObservableObject {
     
     // MARK: - Real-time Updates
     private func startRealTimeCalculation() {
-        // 高频更新 (每 100 毫秒) 产生数字持续跳动效果
+        // High-frequency update (every 100ms) for ticking effect
         timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             self?.updateRealTimeValues()
         }
@@ -314,16 +314,16 @@ class ValueStreamCalculator: ObservableObject {
         let calendar = Calendar.current
         let startOfMonth = calendar.dateInterval(of: .month, for: now)?.start ?? now
         
-        // 计算本月已完成的工作天数
+        // Calculate completed workdays this month
         let completedWorkDays = calculateCompletedWorkDaysThisMonth(startOfMonth: startOfMonth, currentDate: now)
         
-        // 每日收入
+        // Daily income
         let dailyIncome = monthlySalary / Double(workDaysPerMonth)
         
-        // 已完成天数的收入
+        // Income from completed days
         let completedDaysIncome = Double(completedWorkDays) * dailyIncome
         
-        // 今日实时收入
+        // Today's live income
         let todayIncome = liveTickerValue
         
         return completedDaysIncome + todayIncome
@@ -336,7 +336,7 @@ class ValueStreamCalculator: ObservableObject {
         var completedDays = 0
         var date = startOfMonth
         
-        // 遍历从月初到昨天的每一天
+        // Iterate through every day from start of month to yesterday
         let yesterday = calendar.date(byAdding: .day, value: -1, to: currentDate) ?? currentDate
         
         while date <= yesterday {
@@ -360,31 +360,31 @@ class ValueStreamCalculator: ObservableObject {
 // MARK: - Enhanced Income ViewModel Integration
 extension EnhancedIncomeViewModel {
     
-    // 适配 Value Stream 的计算方法
+    // Adapter methods for Value Stream calculations
     func getValueStreamIncome() -> Double {
-        // 使用集成的 ValueStreamCalculator 或回退到现有逻辑
+        // Use integrated ValueStreamCalculator or fallback to existing logic
         let streamValue = getValueStreamCalculator()?.liveTickerValue ?? currentIncome
         return streamValue
     }
     
     func getValueStreamProgress() -> Double {
-        // 使用集成的 ValueStreamCalculator 或回退到现有逻辑
+        // Use integrated ValueStreamCalculator or fallback to existing logic
         return getValueStreamCalculator()?.todayProgress ?? workProgress
     }
     
     func getValueStreamMinuteRate() -> Double {
-        // 使用集成的 ValueStreamCalculator 或回退到现有逻辑
+        // Use integrated ValueStreamCalculator or fallback to existing logic
         let minuteRateValue = getValueStreamCalculator()?.valuePerMinute ?? minuteRate
         return minuteRateValue
     }
     
     func getOvertimeIncome() -> Double {
-        // 从 ValueStreamCalculator 获取加班收入
+        // Get overtime income from ValueStreamCalculator
         return getValueStreamCalculator()?.overtimeIncome ?? overtimeIncome
     }
     
     func getMonthlyAccumulatedIncome() -> Double {
-        // 获取本月累计收入
+        // Get monthly accumulated income
         return getValueStreamCalculator()?.calculateMonthlyAccumulatedIncome() ?? 0.0
     }
 }

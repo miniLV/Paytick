@@ -377,11 +377,11 @@ struct FinancialHealth: Codable {
         var recs: [String] = []
         
         if expenseToIncomeRatio > 0.8 {
-            recs.append("考虑减少非必要支出，支出比例过高")
+            recs.append("Consider reducing non-essential expenses, expense ratio is too high")
         }
         
         if savingsRate < 0.1 {
-            recs.append("建议增加储蓄，目标是收入的20%以上")
+            recs.append("Suggestion: increase savings, target at least 20% of income")
         }
         
         if score < 50 {

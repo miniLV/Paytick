@@ -50,7 +50,7 @@ struct CyberpunkTheme {
     static let monoFont = Font.system(.body, design: .monospaced)
 }
 
-// MARK: - Animated Income Display (丝滑数字滚动效果)
+// MARK: - Animated Income Display (Smooth scrolling effect)
 struct AnimatedIncomeText: View {
     let value: Double
     let fontSize: CGFloat

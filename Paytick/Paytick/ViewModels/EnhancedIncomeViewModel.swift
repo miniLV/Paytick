@@ -438,15 +438,15 @@ extension EnhancedIncomeViewModel {
     }
     
     var formattedTimeUntilEnd: String {
-        guard let timeRemaining = timeUntilEnd else { return "已结束" }
+        guard let timeRemaining = timeUntilEnd else { return "Finished" }
         
         let hours = Int(timeRemaining / 3600)
         let minutes = Int((timeRemaining.truncatingRemainder(dividingBy: 3600)) / 60)
         
         if hours > 0 {
-            return "\(hours)小时\(minutes)分钟"
+            return "\(hours)h \(minutes)m"
         } else {
-            return "\(minutes)分钟"
+            return "\(minutes)m"
         }
     }
     
@@ -454,7 +454,7 @@ extension EnhancedIncomeViewModel {
         let hours = Int(todayWorkedMinutes / 60)
         let minutes = Int(todayWorkedMinutes.truncatingRemainder(dividingBy: 60))
         
-        return "\(hours)小时\(minutes)分钟"
+        return "\(hours)h \(minutes)m"
     }
     
     var formattedOvertimeTime: String {
@@ -464,9 +464,9 @@ extension EnhancedIncomeViewModel {
         let minutes = Int(overtimeMinutes.truncatingRemainder(dividingBy: 60))
         
         if hours > 0 {
-            return "加班\(hours)小时\(minutes)分钟"
+            return "Overtime \(hours)h \(minutes)m"
         } else {
-            return "加班\(minutes)分钟"
+            return "Overtime \(minutes)m"
         }
     }
     
@@ -651,7 +651,7 @@ extension EnhancedIncomeViewModel {
         // Convert original data to new format
         if original.isConfigured {
             let profile = UserProfile(
-                name: "用户",
+                name: "User",
                 monthlySalary: original.monthlySalary,
                 workdaysPerMonth: original.workdaysPerMonth,
                 currency: "CNY"

@@ -113,7 +113,7 @@ class IncomeCalculationService: IncomeCalculationServiceProtocol, ObservableObje
             return .working
         } else if currentTime >= todayEnd {
             // Check if it's overtime (within reasonable hours)
-            let maxOvertimeHours = 4 // 最多4小时加班
+            let maxOvertimeHours = 4 // Max 4 hours of overtime
             let maxOvertimeEnd = calendar.date(byAdding: .hour, value: maxOvertimeHours, to: todayEnd) ?? todayEnd
             if currentTime < maxOvertimeEnd {
                 return .overtime
@@ -186,7 +186,7 @@ class IncomeCalculationService: IncomeCalculationServiceProtocol, ObservableObje
         var workedMinutes = 0.0
         
         // Cap effective time at end of workday - NO automatic overtime!
-        // Income should stop accumulating after work hours ("止盈")
+        // Income should stop accumulating after work hours ("Take Profit")
         let effectiveCurrentTime = min(currentTime, todayEnd)
         
         if effectiveCurrentTime > todayStart {

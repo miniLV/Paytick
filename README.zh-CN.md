@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="README.md">English</a> | 简体中文
+  <a href="https://github.com/miniLV/Paytick/releases">下载最新版 DMG</a> | <a href="README.md">English</a> | 简体中文
 </p>
 
 <p align="center">
@@ -68,10 +68,19 @@ Paytick 是一款专为 macOS 设计的**实时收入追踪器**。它不仅是�
 
 ---
 
-## 🛡 隐私说明
+## 🛡 隐私与安全性
 
 *   **100% 本地存储**：所有薪资和工作数据均存储在您的本地 macOS 数据库中，不联网，不上传，不监控。
+*   **Apple 已公证 (Notarized)**：本项目已集成 GitHub Actions 自动化签名与公证流程。发布的 DMG 包已经过 Apple 安全扫描，确保无病毒，用户可放心下载并直接双击运行。
 *   **开源透明**：您可以随时检查代码，确保没有后门。
+
+---
+
+## 🛠 安装指南 (Installation)
+
+1.  前往 [Releases](https://github.com/miniLV/Paytick/releases) 页面下载最新的 `Paytick.dmg`。
+2.  打开 DMG 并将 Paytick 拖入 **Applications** (应用程序) 文件夹。
+3.  **初次运行**：双击图标启动。如果系统提示无法验证开发者（针对未公证版本），请右键点击图标选择“打开”。
 
 ---
 

@@ -1,0 +1,91 @@
+name: Build and Release Paytick
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Install Apple Certificate
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # Create a temporary keychain
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app.keychain-db
+
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # Import the certificate to the keychain
+          security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+      - name: Build and Archive
+        run: |
+          xcodebuild archive \
+            -project Paytick/Paytick.xcodeproj \
+            -scheme Paytick \
+            -configuration Release \
+            -archivePath ./build/Paytick.xcarchive \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="${{ secrets.CODE_SIGN_IDENTITY }}" \
+            SKIP_INSTALL=NO
+
+      - name: Export App
+        run: |
+          mkdir -p ./build/Export
+          cp -R ./build/Paytick.xcarchive/Products/Applications/Paytick.app ./build/Export/
+
+      - name: Code Sign App
+        env:
+          CODE_SIGN_IDENTITY: ${{ secrets.CODE_SIGN_IDENTITY }}
+        run: |
+          # Re-sign with entitlements if necessary, here we do a deep sign
+          codesign --deep --force --options runtime --sign "$CODE_SIGN_IDENTITY" ./build/Export/Paytick.app
+
+      # Notarization is currently disabled as it requires Developer ID Application certificate
+      # To enable, uncomment the following step and ensure secrets are set
+      # - name: Notarize App
+      #   env:
+      #     APPLE_ID: ${{ secrets.APPLE_ID }}
+      #     APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+      #     TEAM_ID: ${{ secrets.TEAM_ID }}
+      #   run: |
+      #     ditto -c -k --keepParent ./build/Export/Paytick.app ./build/Paytick_to_notarize.zip
+      #     xcrun notarytool submit ./build/Paytick_to_notarize.zip --apple-id "$APPLE_ID" --password "$APPLE_ID_PASSWORD" --team-id "$TEAM_ID" --wait
+      #     xcrun stapler staple ./build/Export/Paytick.app
+
+      - name: Create DMG
+        run: |
+          # Use hdiutil to create a professional DMG
+          hdiutil create -volname "Paytick" -srcfolder ./build/Export/ -ov -format UDZO Paytick.dmg
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: Paytick.dmg
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

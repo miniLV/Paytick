@@ -45,17 +45,17 @@ enum NotificationType: String, CaseIterable {
     var title: String {
         switch self {
         case .workEnd:
-            return "下班时间到了！"
+            return "Time to get off work!"
         case .overtime:
-            return "加班提醒"
+            return "Overtime Alert"
         case .rewardAchieved:
-            return "恭喜！奖励达成"
+            return "Congratulations! Reward Achieved"
         case .dailyIncome:
-            return "今日收入更新"
+            return "Today's Income Update"
         case .lunchBreak:
-            return "午休时间"
+            return "Lunch Break"
         case .workStart:
-            return "工作开始"
+            return "Work Started"
         }
     }
     
@@ -146,8 +146,8 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
         let workEndCategory = UNNotificationCategory(
             identifier: NotificationType.workEnd.rawValue,
             actions: [
-                UNNotificationAction(identifier: "extend_work", title: "继续工作", options: []),
-                UNNotificationAction(identifier: "end_work", title: "结束工作", options: [.destructive])
+                UNNotificationAction(identifier: "extend_work", title: "Continue Working", options: []),
+                UNNotificationAction(identifier: "end_work", title: "End Work", options: [.destructive])
             ],
             intentIdentifiers: [],
             options: []
@@ -156,8 +156,8 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
         let overtimeCategory = UNNotificationCategory(
             identifier: NotificationType.overtime.rawValue,
             actions: [
-                UNNotificationAction(identifier: "continue_overtime", title: "继续加班", options: []),
-                UNNotificationAction(identifier: "end_overtime", title: "停止加班", options: [.destructive])
+                UNNotificationAction(identifier: "continue_overtime", title: "Continue Overtime", options: []),
+                UNNotificationAction(identifier: "end_overtime", title: "Stop Overtime", options: [.destructive])
             ],
             intentIdentifiers: [],
             options: []
@@ -166,7 +166,7 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
         let rewardCategory = UNNotificationCategory(
             identifier: NotificationType.rewardAchieved.rawValue,
             actions: [
-                UNNotificationAction(identifier: "view_reward", title: "查看奖励", options: [.foreground])
+                UNNotificationAction(identifier: "view_reward", title: "View Reward", options: [.foreground])
             ],
             intentIdentifiers: [],
             options: []
@@ -177,25 +177,25 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
     
     // MARK: - Fun Work Notification Messages
     private let workStartMessages = [
-        "☕️ 新的一天开始啦！今天也是努力搬砖的一天~",
-        "🚀 打工人打工魂！今天要赚多少钱呢？",
-        "💪 早安，打工人！今天的钱包等着你去填满！",
-        "🎯 开始计时！每一分钟都在变现~",
-        "⏰ 上班啦！又是元气满满的一天！",
-        "🔥 工作时间到！让金币飞起来~",
-        "💰 滴滴滴～收入计时器已启动！",
-        "🌟 今天又是为梦想充值的一天！"
+        "☕️ A new day begins! Time to grind~",
+        "🚀 Work hard, earn hard! How much are we making today?",
+        "💪 Good morning! Your wallet is waiting to be filled!",
+        "🎯 Timer started! Every minute counts towards your goals~",
+        "⏰ Work time! Let's have a productive day!",
+        "🔥 Let the coins roll in!",
+        "💰 Drip, drip... the income ticker is live!",
+        "🌟 Another day to invest in your dreams!"
     ]
     
     private let workEndMessages = [
-        "🎉 下班啦！今天辛苦了，好好休息~",
-        "🌙 打卡下班！今天的你超棒的！",
-        "🍻 下班时间到！该享受生活了~",
-        "🏠 收工！快回家躺平吧~",
-        "✨ 一天的努力结束了，给自己点赞！",
-        "🎊 叮！今日份的搬砖任务已完成~",
-        "🌈 下班啦！明天继续加油！",
-        "🍜 辛苦啦！记得好好吃晚饭~"
+        "🎉 Work's done! Take a well-deserved break~",
+        "🌙 Clocked out! You did amazing today!",
+        "🍻 It's time to enjoy life!",
+        "🏠 Time to head home and relax!",
+        "✨ Great job today, give yourself a pat on the back!",
+        "🎊 Mission accomplished! Today's tasks are done~",
+        "🌈 See you tomorrow! Keep up the great work!",
+        "🍜 You've earned it! Go have a delicious dinner~"
     ]
     
     // MARK: - Notification Scheduling
@@ -214,7 +214,7 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
         guard reminderTime > Date() else { return }
         
         let content = UNMutableNotificationContent()
-        content.title = "🌅 准备上班"
+        content.title = "🌅 Prepare for Work"
         content.body = workStartMessages.randomElement() ?? workStartMessages[0]
         content.sound = preferences.soundEnabled ? UNNotificationSound.default : nil
         content.badge = preferences.badgeEnabled ? 1 : nil
@@ -248,7 +248,7 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
         
         let content = UNMutableNotificationContent()
         content.title = NotificationType.workEnd.title
-        content.body = workEndMessages.randomElement() ?? "还有 \(preferences.workEndReminderMinutes) 分钟就到下班时间了。今天辛苦了！"
+        content.body = workEndMessages.randomElement() ?? "Only \(preferences.workEndReminderMinutes) minutes left until the end of the work day. Great job today!"
         content.categoryIdentifier = NotificationType.workEnd.rawValue
         content.sound = preferences.soundEnabled ? UNNotificationSound.default : nil
         content.badge = preferences.badgeEnabled ? 1 : nil
@@ -277,7 +277,7 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
         
         let content = UNMutableNotificationContent()
         content.title = NotificationType.overtime.title
-        content.body = "您已经加班 \(Int(overtimeMinutes)) 分钟了。注意休息！"
+        content.body = "You have been working overtime for \(Int(overtimeMinutes)) minutes. Please take a break!"
         content.categoryIdentifier = NotificationType.overtime.rawValue
         content.sound = preferences.soundEnabled ? UNNotificationSound.default : nil
         
@@ -298,7 +298,7 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
         
         let content = UNMutableNotificationContent()
         content.title = NotificationType.rewardAchieved.title
-        content.body = "恭喜！您已完成「\(reward.title)」奖励！"
+        content.body = "Congratulations! You have completed the \"\(reward.title)\" reward!"
         content.categoryIdentifier = NotificationType.rewardAchieved.rawValue
         content.sound = preferences.soundEnabled ? UNNotificationSound.default : nil
         content.badge = preferences.badgeEnabled ? 1 : nil
@@ -325,9 +325,9 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
         content.title = NotificationType.dailyIncome.title
         
         if privacyEnabled, let formatter = formatter {
-            content.body = "今日收入：\(formatter.formatAmount(income))"
+            content.body = "Today's Income: \(formatter.formatAmount(income))"
         } else {
-            content.body = "今日收入：¥\(String(format: "%.2f", income))"
+            content.body = "Today's Income: ¥\(String(format: "%.2f", income))"
         }
         
         content.sound = preferences.soundEnabled ? UNNotificationSound.default : nil
@@ -349,7 +349,7 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
         
         let content = UNMutableNotificationContent()
         content.title = NotificationType.lunchBreak.title
-        content.body = "午休时间到了，记得休息一下！"
+        content.body = "It's lunch break time, remember to take a rest!"
         content.sound = preferences.soundEnabled ? UNNotificationSound(named: UNNotificationSoundName("gentle.wav")) : nil
         
         let dateComponents = Calendar.current.dateComponents([.hour, .minute], from: lunchTime)
@@ -391,7 +391,7 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
                 triggerComponents.minute = max(0, totalMinutes % 60)
                 
                 let content = UNMutableNotificationContent()
-                content.title = "🌅 准备上班"
+                content.title = "🌅 Prepare for Work"
                 content.body = workStartMessages.randomElement() ?? workStartMessages[0]
                 content.sound = preferences.soundEnabled ? UNNotificationSound.default : nil
                 
@@ -425,8 +425,8 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
                 let content = UNMutableNotificationContent()
                 content.title = NotificationType.workEnd.title
                 content.body = preferences.workEndReminderMinutes > 0
-                    ? "还有 \(preferences.workEndReminderMinutes) 分钟就到下班时间了！\(workEndMessages.randomElement() ?? "")"
-                    : workEndMessages.randomElement() ?? "下班时间到了！今天辛苦了！"
+                    ? "Only \(preferences.workEndReminderMinutes) minutes left until the end of the work day! \(workEndMessages.randomElement() ?? "")"
+                    : workEndMessages.randomElement() ?? "Time to get off work! Great job today!"
                 content.categoryIdentifier = NotificationType.workEnd.rawValue
                 content.sound = preferences.soundEnabled ? UNNotificationSound.default : nil
                 
@@ -461,10 +461,10 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
         guard preferences.monthlyGoalEnabled && permissionGranted else { return }
         
         let content = UNMutableNotificationContent()
-        content.title = "🎉 月度目标达成！"
+        content.title = "🎉 Monthly Goal Achieved!"
         content.body = goalTitle.isEmpty 
-            ? "恭喜！你已完成本月 ¥\(String(format: "%.0f", targetAmount)) 的收入目标！"
-            : "恭喜！你已赚够 \(goalTitle) 的钱啦！(¥\(String(format: "%.0f", targetAmount)))"
+            ? "Congratulations! You have completed this month's income goal of ¥\(String(format: "%.0f", targetAmount))!"
+            : "Congratulations! You've earned enough for \(goalTitle)! (¥\(String(format: "%.0f", targetAmount)))"
         content.sound = UNNotificationSound.default
         content.badge = 1
         
