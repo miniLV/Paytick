@@ -90,6 +90,12 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
     private let repositoryManager = RepositoryManager.shared
     private var cancellables = Set<AnyCancellable>()
     
+    // Notification sent flags to prevent duplicates
+    private var workStartNotificationSentToday: Date?
+    private var workEndNotificationSentToday: Date?
+    private var scheduleUpdateNotificationSent: Date?
+    
+    
     override init() {
         super.init()
         loadPreferences()
@@ -202,7 +208,7 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
     
     /// Schedule work start reminder notification
     func scheduleWorkStartReminder(startTime: Date) {
-        guard preferences.workEndEnabled && permissionGranted else { return }
+        guard preferences.workStartEnabled && permissionGranted else { return }
         
         // Schedule for 5 minutes before work starts
         let reminderTime = Calendar.current.date(
@@ -370,13 +376,23 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
     /// Schedule daily work notifications based on work schedule
     func scheduleDailyWorkNotifications(startTime: Date, endTime: Date, workdays: Set<Weekday>) {
         // Cancel existing daily notifications first
+        print("🔄 [Notification] Rescheduling daily work notifications (cancelling old ones first)")
         cancelDailyWorkNotifications()
         
         guard permissionGranted else {
+            print("⚠️ [Notification] Cannot schedule notifications - permission not granted")
             return
         }
         
         let calendar = Calendar.current
+        
+        // Debug: Log the input times
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        print("📅 [Notification] Scheduling daily notifications:")
+        print("   Start time: \(formatter.string(from: startTime))")
+        print("   End time: \(formatter.string(from: endTime))")
+        print("   Workdays: \(workdays.map { $0.rawValue }.joined(separator: ", "))")
         
         // Schedule work start notification for each workday (5 minutes before start)
         if preferences.workStartEnabled {
@@ -389,6 +405,8 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
                 let totalMinutes = (startComponents.hour ?? 0) * 60 + (startComponents.minute ?? 0) - 5
                 triggerComponents.hour = max(0, totalMinutes / 60)
                 triggerComponents.minute = max(0, totalMinutes % 60)
+                
+                print("   🌅 Work START notification for \(weekday.rawValue): \(String(format: "%02d:%02d", triggerComponents.hour ?? 0, triggerComponents.minute ?? 0)) (5 min before start)")
                 
                 let content = UNMutableNotificationContent()
                 content.title = "🌅 Prepare for Work"
@@ -412,6 +430,7 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
         
         // Schedule work end notification for each workday (N minutes before end, configurable)
         if preferences.workEndEnabled {
+            print("   ⏰ Work END reminder offset: \(preferences.workEndReminderMinutes) minutes before end time")
             for weekday in workdays {
                 let endComponents = calendar.dateComponents([.hour, .minute], from: endTime)
                 var triggerComponents = DateComponents()
@@ -421,6 +440,8 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
                 let totalMinutes = (endComponents.hour ?? 0) * 60 + (endComponents.minute ?? 0) - preferences.workEndReminderMinutes
                 triggerComponents.hour = max(0, totalMinutes / 60)
                 triggerComponents.minute = max(0, totalMinutes % 60)
+                
+                print("   🌙 Scheduling Work END for \(weekday.rawValue) at \(String(format: "%02d:%02d", triggerComponents.hour ?? 0, triggerComponents.minute ?? 0))")
                 
                 let content = UNMutableNotificationContent()
                 content.title = NotificationType.workEnd.title
@@ -439,8 +460,85 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
                 
                 notificationCenter.add(request) { error in
                     if let error = error {
+                        print("      ❌ Failed to schedule work END notification for \(weekday.rawValue): \(error.localizedDescription)")
                     } else {
+                        print("      ✅ Successfully scheduled work END notification for \(weekday.rawValue) with ID: \(request.identifier)")
+                        
+                        // Check if trigger time has passed today
+                        let now = Date()
+                        let nowComponents = calendar.dateComponents([.hour, .minute], from: now)
+                        let nowMinutes = (nowComponents.hour ?? 0) * 60 + (nowComponents.minute ?? 0)
+                        
+                        if totalMinutes < nowMinutes {
+                            print("      ⚠️ Trigger time (\(String(format: "%02d:%02d", triggerComponents.hour ?? 0, triggerComponents.minute ?? 0))) has passed today (current: \(String(format: "%02d:%02d", nowComponents.hour ?? 0, nowComponents.minute ?? 0)))")
+                            print("      📅 Next notification will fire: Next \(weekday.rawValue)")
+                        } else {
+                            let minutesUntilTrigger = totalMinutes - nowMinutes
+                            print("      ✅ Trigger time is in the future - will fire in \(minutesUntilTrigger) minutes")
+                            
+                            // If trigger is within next 30 minutes, also schedule an immediate one-time notification
+                            // This ensures notification fires even if recurring trigger misses due to timing
+                            if minutesUntilTrigger <= 30 && minutesUntilTrigger > 0 {
+                                // Calculate exact trigger time (e.g., 4:17:00, not 4:17:30)
+                                var exactTriggerComponents = DateComponents()
+                                exactTriggerComponents.hour = triggerComponents.hour
+                                exactTriggerComponents.minute = triggerComponents.minute
+                                exactTriggerComponents.second = 0
+                                
+                                let todayComponents = calendar.dateComponents([.year, .month, .day], from: now)
+                                exactTriggerComponents.year = todayComponents.year
+                                exactTriggerComponents.month = todayComponents.month
+                                exactTriggerComponents.day = todayComponents.day
+                                
+                                if let exactTriggerTime = calendar.date(from: exactTriggerComponents) {
+                                    let secondsUntilTrigger = exactTriggerTime.timeIntervalSince(now)
+                                    
+                                    if secondsUntilTrigger > 0 {
+                                        print("      🚀 Triggering immediate notification in \(Int(secondsUntilTrigger))s")
+                                        
+                                        let immediateContent = UNMutableNotificationContent()
+                                        immediateContent.title = content.title
+                                        immediateContent.body = content.body
+                                        immediateContent.categoryIdentifier = content.categoryIdentifier
+                                        immediateContent.sound = content.sound
+                                        
+                                        // Fire at exact trigger time
+                                        let immediateTrigger = UNTimeIntervalNotificationTrigger(
+                                            timeInterval: secondsUntilTrigger,
+                                            repeats: false
+                                        )
+                                        
+                                        let immediateRequest = UNNotificationRequest(
+                                            identifier: "immediate_work_end_\(weekday.rawValue)_\(Date().timeIntervalSince1970)",
+                                            content: immediateContent,
+                                            trigger: immediateTrigger
+                                        )
+                                        
+                                        self.notificationCenter.add(immediateRequest) { immediateError in
+                                            if let immediateError = immediateError {
+                                                print("      ❌ Failed to schedule immediate notification: \(immediateError.localizedDescription)")
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
+                }
+            }
+        }
+        
+        // Debug: List all pending notifications after scheduling
+        notificationCenter.getPendingNotificationRequests { requests in
+            print("📋 [Notification] Total pending notifications: \(requests.count)")
+            for request in requests.sorted(by: { $0.identifier < $1.identifier }) {
+                if let trigger = request.trigger as? UNCalendarNotificationTrigger,
+                   let nextTriggerDate = trigger.nextTriggerDate() {
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                    print("   📌 \(request.identifier): \(formatter.string(from: nextTriggerDate))")
+                } else {
+                    print("   📌 \(request.identifier): (no calendar trigger)")
                 }
             }
         }
@@ -453,8 +551,78 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
             identifiers.append("daily_work_start_\(weekday.rawValue)")
             identifiers.append("daily_work_end_\(weekday.rawValue)")
         }
+        print("🗑️ [Notification] Cancelling \(identifiers.count) daily work notifications: \(identifiers.joined(separator: ", "))")
         notificationCenter.removePendingNotificationRequests(withIdentifiers: identifiers)
     }
+    
+    /// Reset notification sent flags (call when schedule changes)
+    func resetNotificationFlags() {
+        print("🔄 [Notification] Resetting notification sent flags")
+        scheduleUpdateNotificationSent = nil
+        // Note: Don't reset workStart/workEnd flags as they should only fire once per day
+    }
+    
+    /// Send immediate notification when work schedule is updated
+    func sendScheduleUpdateNotification(endTime: Date, reminderMinutes: Int) {
+        guard permissionGranted else {
+            print("⚠️ [Notification] Cannot send schedule update notification - permission not granted")
+            return
+        }
+        
+        // Check if we already sent a schedule update notification recently (within 5 seconds)
+        let now = Date()
+        if let lastSent = scheduleUpdateNotificationSent,
+           now.timeIntervalSince(lastSent) < 5 {
+            return
+        }
+        
+        // Mark as sent
+        scheduleUpdateNotificationSent = now
+        
+        // Cancel any previous schedule update notifications to avoid duplicates
+        notificationCenter.getPendingNotificationRequests { [weak self] requests in
+            let oldScheduleUpdates = requests.filter { $0.identifier.hasPrefix("schedule_update_") }
+            if !oldScheduleUpdates.isEmpty {
+                let identifiers = oldScheduleUpdates.map { $0.identifier }
+                self?.notificationCenter.removePendingNotificationRequests(withIdentifiers: identifiers)
+            }
+        }
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        
+        let calendar = Calendar.current
+        let endComponents = calendar.dateComponents([.hour, .minute], from: endTime)
+        let totalMinutes = (endComponents.hour ?? 0) * 60 + (endComponents.minute ?? 0) - reminderMinutes
+        
+        var reminderComponents = DateComponents()
+        reminderComponents.hour = max(0, totalMinutes / 60)
+        reminderComponents.minute = max(0, totalMinutes % 60)
+        
+        let reminderTime = calendar.date(from: reminderComponents) ?? endTime
+        
+        let content = UNMutableNotificationContent()
+        content.title = "✅ Work Schedule Updated"
+        content.body = "Work end reminder set for \(formatter.string(from: reminderTime)) (\(reminderMinutes) min before \(formatter.string(from: endTime)))"
+        content.sound = preferences.soundEnabled ? UNNotificationSound.default : nil
+        
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 2, repeats: false)
+        let request = UNNotificationRequest(
+            identifier: "schedule_update_\(Date().timeIntervalSince1970)",
+            content: content,
+            trigger: trigger
+        )
+        
+        notificationCenter.add(request) { error in
+            if let error = error {
+                print("❌ [Notification] Failed to send schedule update notification: \(error.localizedDescription)")
+            } else {
+                print("✅ [Notification] Sent schedule update confirmation notification")
+            }
+        }
+    }
+
     
     /// Show monthly goal completion notification
     func showMonthlyGoalCompletedNotification(goalTitle: String, targetAmount: Double) {

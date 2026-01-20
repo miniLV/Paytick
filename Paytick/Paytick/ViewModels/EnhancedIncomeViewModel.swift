@@ -58,6 +58,9 @@ class EnhancedIncomeViewModel: ObservableObject {
     
     private var cancellables = Set<AnyCancellable>()
     
+    // Track previous values to detect changes
+    private var lastKnownReminderMinutes: Int = 15
+    
     // MARK: - Compatibility with original ViewModel
     private weak var originalViewModel: IncomeViewModel?
     
@@ -82,6 +85,14 @@ class EnhancedIncomeViewModel: ObservableObject {
             self?.updateRealTimeData()
         }
         
+        // Observe notification preferences changes to trigger rescheduling when settings change
+        notificationService.objectWillChange
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.handleNotificationPreferencesChanged()
+            }
+            .store(in: &cancellables)
+            
         setupBindings()
         loadUserConfiguration()
         startRealTimeUpdates()
@@ -109,11 +120,30 @@ class EnhancedIncomeViewModel: ObservableObject {
     }
     
     func updateWorkSchedule(_ schedule: WorkSchedule) {
+        // Check if schedule actually changed
+        let scheduleChanged = workSchedule == nil || 
+            !Calendar.current.isDate(workSchedule!.startTime, equalTo: schedule.startTime, toGranularity: .minute) ||
+            !Calendar.current.isDate(workSchedule!.endTime, equalTo: schedule.endTime, toGranularity: .minute) ||
+            workSchedule!.workdays != schedule.workdays
+        
         workSchedule = schedule
         incomeCalculationService.updateWorkSchedule(schedule)
         saveWorkSchedule()
         updateConfiguration()
-        scheduleWorkNotifications()
+        
+        // Only reschedule and notify if schedule actually changed
+        if scheduleChanged {
+            // Reset notification flags to allow new notifications
+            notificationService.resetNotificationFlags()
+            
+            scheduleWorkNotifications()
+            
+            // Send immediate confirmation notification
+            notificationService.sendScheduleUpdateNotification(
+                endTime: schedule.endTime,
+                reminderMinutes: notificationService.preferences.workEndReminderMinutes
+            )
+        }
     }
     
     func refreshStatistics() {
@@ -138,6 +168,32 @@ class EnhancedIncomeViewModel: ObservableObject {
             workSchedule: schedule
         )
         return dailyMinutes * minuteRate
+    }
+    
+    // MARK: - Notification Handling
+    
+    private func handleNotificationPreferencesChanged() {
+        let currentReminderMinutes = notificationService.preferences.workEndReminderMinutes
+        
+        // Detect if reminder time changed
+        if currentReminderMinutes != lastKnownReminderMinutes {
+            lastKnownReminderMinutes = currentReminderMinutes
+            
+            // If we have a valid schedule, trigger rescheduling
+            if let schedule = workSchedule {
+                // Reset notification flags to allow new notifications
+                notificationService.resetNotificationFlags()
+                
+                // Reschedule with new settings
+                scheduleWorkNotifications()
+                
+                // Send immediate confirmation notification
+                notificationService.sendScheduleUpdateNotification(
+                    endTime: schedule.endTime,
+                    reminderMinutes: currentReminderMinutes
+                )
+            }
+        }
     }
     
     func requestNotificationPermissions() async {
