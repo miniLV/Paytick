@@ -510,7 +510,7 @@ struct CyberpunkPersonalInfoContent: View {
                             
                             Spacer()
                             
-                            CyberpunkStepper(value: $workDays, range: 15...31)
+                            CyberpunkStepper(value: $workDays, range: 10...31, unit: "Days")
                         }
                     }
                 }
