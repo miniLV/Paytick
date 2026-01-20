@@ -14,6 +14,7 @@ class ValueStreamCalculator: ObservableObject {
     @Published var currentWorkStatus: WorkStatus = .notStarted
     @Published var overtimeMinutes: Double = 0.0
     @Published var overtimeIncome: Double = 0.0
+    @Published var monthlyAccumulatedIncome: Double = 0.0
     
     // MARK: - Private Properties
     private var timer: Timer?
@@ -24,6 +25,7 @@ class ValueStreamCalculator: ObservableObject {
     private var workDaysPerMonth: Int = 22
     private var dailyHours: Double = 8
     private var workSchedule: WorkSchedule?
+    private var dailyIncome: Double = 0.0
     
     init() {
         startRealTimeCalculation()
@@ -53,9 +55,23 @@ class ValueStreamCalculator: ObservableObject {
     
     // MARK: - Core Calculations (per Gemini specification)
     private func calculateBaseValues() {
-        // Calculate value per minute (Value/Min)
-        let dailyIncome = monthlySalary / Double(workDaysPerMonth)
+        // Calculate daily income based on actual workdays in current month
+        // This ensures monthly accumulated income ≈ monthly salary at month end
+        dailyIncome = calculateDailyIncomeForCurrentMonth()
+        
+        // Calculate value per minute based on daily income and daily work hours
         valuePerMinute = dailyIncome / (dailyHours * 60)
+    }
+    
+    /// Calculates daily income by dividing monthly salary by actual workdays in current month
+    private func calculateDailyIncomeForCurrentMonth() -> Double {
+        let totalWorkDaysThisMonth = calculateTotalWorkDaysInMonth(for: Date())
+        guard totalWorkDaysThisMonth > 0 else {
+            // Fallback: use workDaysPerMonth setting or default to 22
+            let fallbackDays = workDaysPerMonth > 0 ? workDaysPerMonth : 22
+            return monthlySalary / Double(fallbackDays)
+        }
+        return monthlySalary / Double(totalWorkDaysThisMonth)
     }
     
     private func updateRealTimeValues() {
@@ -75,6 +91,9 @@ class ValueStreamCalculator: ObservableObject {
         
         // Calculate overtime duration and income
         calculateOvertimeStatus(now)
+        
+        // Update monthly accumulated income
+        updateMonthlyAccumulatedIncome(now)
     }
     
     // MARK: - Time Calculations
@@ -307,26 +326,24 @@ class ValueStreamCalculator: ObservableObject {
     }
     
     // MARK: - Monthly Income Calculation
-    func calculateMonthlyAccumulatedIncome() -> Double {
-        guard let schedule = workSchedule else { return 0.0 }
+    private func updateMonthlyAccumulatedIncome(_ now: Date) {
+        guard workSchedule != nil else {
+            monthlyAccumulatedIncome = 0.0
+            return
+        }
         
-        let now = Date()
-        let calendar = Calendar.current
         let startOfMonth = calendar.dateInterval(of: .month, for: now)?.start ?? now
         
-        // Calculate completed workdays this month
+        // Count completed workdays (from month start to yesterday)
         let completedWorkDays = calculateCompletedWorkDaysThisMonth(startOfMonth: startOfMonth, currentDate: now)
         
-        // Daily income
-        let dailyIncome = monthlySalary / Double(workDaysPerMonth)
-        
-        // Income from completed days
-        let completedDaysIncome = Double(completedWorkDays) * dailyIncome
-        
-        // Today's live income
-        let todayIncome = liveTickerValue
-        
-        return completedDaysIncome + todayIncome
+        // Accumulate: completed days at full daily rate + today's partial income
+        monthlyAccumulatedIncome = Double(completedWorkDays) * dailyIncome + liveTickerValue
+    }
+    
+    /// Legacy support method, now just returns the published property
+    func calculateMonthlyAccumulatedIncome() -> Double {
+        return monthlyAccumulatedIncome
     }
     
     private func calculateCompletedWorkDaysThisMonth(startOfMonth: Date, currentDate: Date) -> Int {
@@ -348,6 +365,25 @@ class ValueStreamCalculator: ObservableObject {
         }
         
         return completedDays
+    }
+    
+    private func calculateTotalWorkDaysInMonth(for date: Date) -> Int {
+        guard let schedule = workSchedule else { return 0 }
+        
+        let startOfMonth = calendar.dateInterval(of: .month, for: date)?.start ?? date
+        let range = calendar.range(of: .day, in: .month, for: date)!
+        let daysInMonth = range.count
+        
+        var workDays = 0
+        for day in 0..<daysInMonth {
+            if let dateToCheck = calendar.date(byAdding: .day, value: day, to: startOfMonth) {
+                let weekday = getCurrentWeekday(dateToCheck)
+                if schedule.workdays.contains(weekday) {
+                    workDays += 1
+                }
+            }
+        }
+        return workDays
     }
     
     // MARK: - Goal Progress (Future Enhancement)

@@ -510,7 +510,26 @@ struct CyberpunkPersonalInfoContent: View {
                             
                             Spacer()
                             
-                            CyberpunkStepper(value: $workDays, range: 10...31, unit: "Days")
+                            // Read-only display of approximate work days
+                            HStack(spacing: 8) {
+                                Text("≈ \(workDays)")
+                                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                    .foregroundColor(CyberpunkTheme.cyanPrimary)
+                                
+                                Text("Days")
+                                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                    .foregroundColor(CyberpunkTheme.cyanPrimary.opacity(0.7))
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.black.opacity(0.6))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(CyberpunkTheme.cyanPrimary.opacity(0.3), lineWidth: 1)
+                            )
                         }
                     }
                 }
@@ -772,7 +791,15 @@ struct CyberpunkPersonalInfoContent: View {
             }
         }
         .onChange(of: monthlySalary) { _, _ in saveConfiguration() }
+        .onChange(of: monthlySalary) { _, _ in saveConfiguration() }
         .onChange(of: workDays) { _, _ in saveConfiguration() }
+        .onChange(of: startTime) { _, _ in saveConfiguration() }
+        .onChange(of: endTime) { _, _ in saveConfiguration() }
+        .onChange(of: selectedDays) { _, _ in 
+            // Auto-update workDays based on selection
+            workDays = calculatedWorkDays
+            saveConfiguration() 
+        }
         .onChange(of: startTime) { _, _ in saveConfiguration() }
         .onChange(of: endTime) { _, _ in saveConfiguration() }
         .onChange(of: selectedDays) { _, _ in saveConfiguration() }
@@ -784,7 +811,7 @@ struct CyberpunkPersonalInfoContent: View {
     private func loadCurrentValues() {
         if let profile = enhancedViewModel.userProfile {
             monthlySalary = String(format: "%.0f", profile.monthlySalary)
-            workDays = profile.workdaysPerMonth
+            // workDays = profile.workdaysPerMonth // Don't use stored value, use calculated one
         }
         
         if let schedule = enhancedViewModel.workSchedule {
@@ -797,57 +824,54 @@ struct CyberpunkPersonalInfoContent: View {
         goalEnabled = UserDefaults.standard.bool(forKey: "monthlyGoalEnabled")
         goalTargetAmount = UserDefaults.standard.string(forKey: "monthlyGoalTargetAmount") ?? "8000"
         goalTitle = UserDefaults.standard.string(forKey: "monthlyGoalTitle") ?? ""
+        
+        // Force update workDays based on loaded schedule
+        // This fixes the issue where old manual setting (e.g. 10) persists
+        workDays = calculatedWorkDays
     }
     
     private func saveConfiguration() {
-        // Validate salary
+        // Validation
+        salaryError = nil
+        scheduleError = nil
+        
+        // Validate Salary
         switch EnhancedIncomeViewModel.validateSalary(monthlySalary) {
         case .success(let salary):
-            salaryError = nil
-            
-            // Validate work days
-            switch EnhancedIncomeViewModel.validateWorkDays(workDays) {
-            case .success(let days):
-                // Validate work times
-                switch EnhancedIncomeViewModel.validateWorkTimes(start: startTime, end: endTime) {
-                case .success:
-                    scheduleError = nil
-                    
-                    // All validations passed - save
-                    let profile = UserProfile(
-                        name: enhancedViewModel.userProfile?.name ?? "User",
-                        monthlySalary: salary,
-                        workdaysPerMonth: days,
-                        currency: "CNY"
-                    )
-                    enhancedViewModel.updateUserProfile(profile)
-                    
-                    // Save schedule
-                    let workdaySet: Set<Weekday> = Set(selectedDays.compactMap { shortName in
-                        Weekday.allCases.first { $0.shortName == shortName }
-                    })
-                    
-                    let lunchStart = Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: Date()) ?? Date()
-                    let lunchEnd = Calendar.current.date(bySettingHour: 13, minute: 0, second: 0, of: Date()) ?? Date()
-                    
-                    let schedule = WorkSchedule(
-                        startTime: startTime,
-                        endTime: endTime,
-                        lunchStartTime: lunchStart,
-                        lunchEndTime: lunchEnd,
-                        workdays: workdaySet
-                    )
-                    enhancedViewModel.updateWorkSchedule(schedule)
-                    
-                case .failure(let error):
-                    scheduleError = error.message
-                }
-            case .failure:
-                // Work days validation is handled by stepper bounds, shouldn't fail
-                break
+            if let existingProfile = enhancedViewModel.userProfile {
+                var updatedProfile = existingProfile
+                updatedProfile.monthlySalary = salary
+                updatedProfile.workdaysPerMonth = workDays
+                enhancedViewModel.updateUserProfile(updatedProfile)
             }
         case .failure(let error):
-            salaryError = error.message
+            salaryError = error.localizedDescription
+            return
+        }
+        
+        // Validate Schedule
+        switch EnhancedIncomeViewModel.validateWorkTimes(start: startTime, end: endTime) {
+        case .success:
+            // Convert selected days to Weekday set
+            let weekdays = selectedDays.compactMap { shortName -> Weekday? in
+                Weekday.allCases.first { $0.shortName == shortName }
+            }
+            
+            if weekdays.isEmpty {
+                scheduleError = "Select at least one day"
+                return
+            }
+            
+            if let existingSchedule = enhancedViewModel.workSchedule {
+                var updatedSchedule = existingSchedule
+                updatedSchedule.startTime = startTime
+                updatedSchedule.endTime = endTime
+                updatedSchedule.workdays = Set(weekdays)
+                enhancedViewModel.updateWorkSchedule(updatedSchedule)
+            }
+        case .failure(let error):
+            scheduleError = error.localizedDescription
+            return
         }
     }
     
@@ -871,9 +895,18 @@ struct CyberpunkPersonalInfoContent: View {
     }
     
     private func calculateGoalProgress() -> Double {
-        guard let targetAmount = Double(goalTargetAmount), targetAmount > 0 else { return 0 }
+        guard let target = Double(goalTargetAmount), target > 0 else { return 0 }
         let currentIncome = enhancedViewModel.getMonthlyAccumulatedIncome()
-        return min(currentIncome / targetAmount, 1.0)
+        return currentIncome / target
+    }
+    
+    // Calculate approximate work days based on selected weekly days
+    // Logic: (Days per week * 52 weeks) / 12 months
+    private var calculatedWorkDays: Int {
+        let daysPerWeek = selectedDays.count
+        // Average month is 4.33 weeks
+        let avgDays = Double(daysPerWeek) * 52.0 / 12.0
+        return Int(round(avgDays))
     }
 }
 

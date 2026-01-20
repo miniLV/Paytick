@@ -55,8 +55,18 @@ struct WorkSchedule: Codable, Identifiable {
         let startMinutes = calendar.component(.hour, from: startTime) * 60 + calendar.component(.minute, from: startTime)
         let endMinutes = calendar.component(.hour, from: endTime) * 60 + calendar.component(.minute, from: endTime)
         
-        // Simple calculation: just end time - start time (no lunch break deduction)
-        let workMinutes = Double(endMinutes - startMinutes)
+        // Simple calculation: just end time - start time
+        var workMinutes = Double(endMinutes - startMinutes)
+        
+        // Deduct lunch break
+        let lunchStartMinutes = calendar.component(.hour, from: lunchStartTime) * 60 + calendar.component(.minute, from: lunchStartTime)
+        let lunchEndMinutes = calendar.component(.hour, from: lunchEndTime) * 60 + calendar.component(.minute, from: lunchEndTime)
+        let lunchDuration = Double(max(0, lunchEndMinutes - lunchStartMinutes))
+        
+        // Only deduct if lunch is within work hours - simplified assumption for now
+        if lunchDuration > 0 {
+            workMinutes -= lunchDuration
+        }
         
         return max(0, workMinutes)
     }

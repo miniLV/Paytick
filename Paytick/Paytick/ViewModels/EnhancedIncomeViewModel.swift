@@ -10,7 +10,8 @@ class EnhancedIncomeViewModel: ObservableObject {
     @Published var workSchedule: WorkSchedule?
     @Published var currentIncome: Double = 0
     @Published var workStatus: WorkStatus = .notStarted
-    @Published var workProgress: Double = 0
+    @Published var dailyGoalProgress: Double = 0.0
+    @Published var monthlyAccumulatedIncome: Double = 0.0
     @Published var isConfigured: Bool = false
     @Published var isLoading: Bool = false
     
@@ -146,6 +147,11 @@ class EnhancedIncomeViewModel: ObservableObject {
         }
     }
     
+    func getMonthlyAccumulatedIncome() -> Double {
+        // Get monthly accumulated income from published property
+        return monthlyAccumulatedIncome
+    }
+    
     func refreshStatistics() {
         statisticsService.calculateWeeklyStats()
         statisticsService.calculateMonthlyStats()
@@ -221,7 +227,7 @@ class EnhancedIncomeViewModel: ObservableObject {
         
         incomeCalculationService.$workProgress
             .receive(on: DispatchQueue.main)
-            .assign(to: \.workProgress, on: self)
+            .assign(to: \.dailyGoalProgress, on: self) // Assuming workProgress maps to dailyGoalProgress
             .store(in: &cancellables)
         
         incomeCalculationService.$minuteRate
@@ -247,7 +253,7 @@ class EnhancedIncomeViewModel: ObservableObject {
         
         // Calculate estimated end time when work status changes
         $workStatus
-            .combineLatest($workProgress)
+            .combineLatest($dailyGoalProgress) // Changed from $workProgress
             .map { [weak self] status, progress -> Date? in
                 self?.calculateEstimatedEndTime(status: status, progress: progress)
             }
@@ -273,7 +279,12 @@ class EnhancedIncomeViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .assign(to: \.overtimeIncome, on: self)
             .store(in: &cancellables)
-        
+            
+        calculator.$monthlyAccumulatedIncome
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.monthlyAccumulatedIncome, on: self)
+            .store(in: &cancellables)
+            
         // Note: Other bindings can be added gradually after testing
     }
     
