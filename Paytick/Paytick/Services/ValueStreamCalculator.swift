@@ -405,7 +405,7 @@ extension EnhancedIncomeViewModel {
     
     func getValueStreamProgress() -> Double {
         // Use integrated ValueStreamCalculator or fallback to existing logic
-        return getValueStreamCalculator()?.todayProgress ?? workProgress
+        return getValueStreamCalculator()?.todayProgress ?? dailyGoalProgress
     }
     
     func getValueStreamMinuteRate() -> Double {
@@ -417,10 +417,5 @@ extension EnhancedIncomeViewModel {
     func getOvertimeIncome() -> Double {
         // Get overtime income from ValueStreamCalculator
         return getValueStreamCalculator()?.overtimeIncome ?? overtimeIncome
-    }
-    
-    func getMonthlyAccumulatedIncome() -> Double {
-        // Get monthly accumulated income
-        return getValueStreamCalculator()?.calculateMonthlyAccumulatedIncome() ?? 0.0
     }
 }

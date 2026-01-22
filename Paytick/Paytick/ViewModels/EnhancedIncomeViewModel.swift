@@ -59,8 +59,9 @@ class EnhancedIncomeViewModel: ObservableObject {
     
     private var cancellables = Set<AnyCancellable>()
     
-    // Track previous values to detect changes
-    private var lastKnownReminderMinutes: Int = 15
+    // Track previous values to detect changes (initialized in init)
+    private var lastKnownReminderMinutes: Int = 0
+    private var isInitialPreferencesLoad = true
     
     // MARK: - Compatibility with original ViewModel
     private weak var originalViewModel: IncomeViewModel?
@@ -74,6 +75,9 @@ class EnhancedIncomeViewModel: ObservableObject {
             notificationService: notificationService,
             incomeCalculationService: incomeCalculationService
         )
+        
+        // Initialize lastKnownReminderMinutes to current value to prevent false trigger on launch
+        self.lastKnownReminderMinutes = notificationService.preferences.workEndReminderMinutes
         
         // Initialize timer manager with placeholder callback, will be set later
         self.timerManager = TimerManager.createRealTimeTimer { }
@@ -98,6 +102,20 @@ class EnhancedIncomeViewModel: ObservableObject {
         loadUserConfiguration()
         startRealTimeUpdates()
         setupValueStreamBindings()
+        setupNotificationObservers()
+    }
+    
+    private func setupNotificationObservers() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleRescheduleRequest),
+            name: NSNotification.Name("RequestNotificationReschedule"),
+            object: nil
+        )
+    }
+    
+    @objc private func handleRescheduleRequest() {
+        scheduleWorkNotifications(showConfirmation: false)
     }
     
     // Compatibility initializer for legacy IncomeViewModel
@@ -121,29 +139,28 @@ class EnhancedIncomeViewModel: ObservableObject {
     }
     
     func updateWorkSchedule(_ schedule: WorkSchedule) {
-        // Check if schedule actually changed
-        let scheduleChanged = workSchedule == nil || 
-            !Calendar.current.isDate(workSchedule!.startTime, equalTo: schedule.startTime, toGranularity: .minute) ||
-            !Calendar.current.isDate(workSchedule!.endTime, equalTo: schedule.endTime, toGranularity: .minute) ||
-            workSchedule!.workdays != schedule.workdays
+        // Track if this is the initial load
+        let isInitialLoad = workSchedule == nil
+        
+        // Check what changed
+        let startTimeChanged = !isInitialLoad && !Calendar.current.isDate(workSchedule!.startTime, equalTo: schedule.startTime, toGranularity: .minute)
+        let endTimeChanged = !isInitialLoad && !Calendar.current.isDate(workSchedule!.endTime, equalTo: schedule.endTime, toGranularity: .minute)
+        let workdaysChanged = !isInitialLoad && workSchedule!.workdays != schedule.workdays
+        
+        let scheduleChanged = isInitialLoad || startTimeChanged || endTimeChanged || workdaysChanged
         
         workSchedule = schedule
         incomeCalculationService.updateWorkSchedule(schedule)
         saveWorkSchedule()
         updateConfiguration()
         
-        // Only reschedule and notify if schedule actually changed
+        // Only reschedule if schedule actually changed
         if scheduleChanged {
-            // Reset notification flags to allow new notifications
             notificationService.resetNotificationFlags()
             
-            scheduleWorkNotifications()
-            
-            // Send immediate confirmation notification
-            notificationService.sendScheduleUpdateNotification(
-                endTime: schedule.endTime,
-                reminderMinutes: notificationService.preferences.workEndReminderMinutes
-            )
+            // Only show confirmation when END TIME changes (not start time or workdays)
+            // Because the confirmation is about "Work end reminder set for..."
+            scheduleWorkNotifications(showConfirmation: endTimeChanged)
         }
     }
     
@@ -181,23 +198,21 @@ class EnhancedIncomeViewModel: ObservableObject {
     private func handleNotificationPreferencesChanged() {
         let currentReminderMinutes = notificationService.preferences.workEndReminderMinutes
         
+        // Skip confirmation on initial load (app launch)
+        if isInitialPreferencesLoad {
+            lastKnownReminderMinutes = currentReminderMinutes
+            isInitialPreferencesLoad = false
+            return
+        }
+        
         // Detect if reminder time changed
         if currentReminderMinutes != lastKnownReminderMinutes {
             lastKnownReminderMinutes = currentReminderMinutes
             
             // If we have a valid schedule, trigger rescheduling
-            if let schedule = workSchedule {
-                // Reset notification flags to allow new notifications
+            if workSchedule != nil {
                 notificationService.resetNotificationFlags()
-                
-                // Reschedule with new settings
-                scheduleWorkNotifications()
-                
-                // Send immediate confirmation notification
-                notificationService.sendScheduleUpdateNotification(
-                    endTime: schedule.endTime,
-                    reminderMinutes: currentReminderMinutes
-                )
+                scheduleWorkNotifications(showConfirmation: true)
             }
         }
     }
@@ -295,6 +310,9 @@ class EnhancedIncomeViewModel: ObservableObject {
             userProfile = try repositoryManager.userProfileRepository.load(key: "current")
             workSchedule = try repositoryManager.workScheduleRepository.load(key: "current")
             updateConfiguration()
+            
+            // Initial notification scheduling on app launch (no confirmation banner)
+            scheduleWorkNotifications(showConfirmation: false)
         } catch {
         }
         
@@ -465,15 +483,23 @@ class EnhancedIncomeViewModel: ObservableObject {
         }
     }
     
-    private func scheduleWorkNotifications() {
+    private func scheduleWorkNotifications(showConfirmation: Bool = false) {
         guard let schedule = workSchedule else { return }
         
-        // Schedule recurring daily work start/end notifications
+        // Schedule work notifications via Timer-based approach
         notificationService.scheduleDailyWorkNotifications(
             startTime: schedule.startTime,
             endTime: schedule.endTime,
             workdays: schedule.workdays
         )
+        
+        // Show confirmation if requested (e.g., manual setting change)
+        if showConfirmation {
+            notificationService.sendScheduleUpdateNotification(
+                endTime: schedule.endTime,
+                reminderMinutes: notificationService.preferences.workEndReminderMinutes
+            )
+        }
     }
 }
 

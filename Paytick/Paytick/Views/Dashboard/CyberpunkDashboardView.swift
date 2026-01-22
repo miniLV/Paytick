@@ -438,7 +438,7 @@ struct HeroEarningsCard: View {
                     // === NORMAL MODE: Show Income ===
                     VStack(spacing: 12) {
                         normalIncomeView
-                        SegmentedProgressBar(progress: enhancedViewModel.workProgress)
+                        SegmentedProgressBar(progress: enhancedViewModel.dailyGoalProgress)
                     }
                 }
             }
@@ -841,11 +841,11 @@ struct QuestLogContent: View {
     @State private var isHovered = false
     
     private var progressPercent: Int {
-        Int(enhancedViewModel.workProgress * 100)
+        Int(enhancedViewModel.dailyGoalProgress * 100)
     }
     
     private var isComplete: Bool {
-        enhancedViewModel.workProgress >= 1.0
+        enhancedViewModel.dailyGoalProgress >= 1.0
     }
     
     var body: some View {
@@ -897,7 +897,7 @@ struct QuestLogContent: View {
                                         endPoint: .trailing
                                     )
                                 )
-                                .frame(width: geometry.size.width * CGFloat(min(enhancedViewModel.workProgress, 1.0)), height: 12)
+                                .frame(width: geometry.size.width * CGFloat(min(enhancedViewModel.dailyGoalProgress, 1.0)), height: 12)
                             
                             if isComplete {
                                 Text("COMPLETE")
