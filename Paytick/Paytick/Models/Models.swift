@@ -48,25 +48,15 @@ struct WorkSchedule: Codable, Identifiable {
     }
     
     var totalWorkMinutesPerDay: Double {
-        // Extract only hour and minute components, ignore date part
-        // This fixes the bug where dates from different days cause wrong calculations
+        // Simple calculation: work time = end time - start time
+        // No lunch break deduction
         let calendar = Calendar.current
         
         let startMinutes = calendar.component(.hour, from: startTime) * 60 + calendar.component(.minute, from: startTime)
         let endMinutes = calendar.component(.hour, from: endTime) * 60 + calendar.component(.minute, from: endTime)
         
-        // Simple calculation: just end time - start time
-        var workMinutes = Double(endMinutes - startMinutes)
-        
-        // Deduct lunch break
-        let lunchStartMinutes = calendar.component(.hour, from: lunchStartTime) * 60 + calendar.component(.minute, from: lunchStartTime)
-        let lunchEndMinutes = calendar.component(.hour, from: lunchEndTime) * 60 + calendar.component(.minute, from: lunchEndTime)
-        let lunchDuration = Double(max(0, lunchEndMinutes - lunchStartMinutes))
-        
-        // Only deduct if lunch is within work hours - simplified assumption for now
-        if lunchDuration > 0 {
-            workMinutes -= lunchDuration
-        }
+        // Work minutes = end - start (e.g., 17:30 - 8:30 = 9 hours = 540 minutes)
+        let workMinutes = Double(endMinutes - startMinutes)
         
         return max(0, workMinutes)
     }

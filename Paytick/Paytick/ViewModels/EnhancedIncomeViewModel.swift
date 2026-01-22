@@ -42,9 +42,6 @@ class EnhancedIncomeViewModel: ObservableObject {
         return "\(minutes)m"
     }
     
-    // Session tracking
-    @Published var sessionStartTime: Date?
-    @Published var sessionDuration: TimeInterval = 0
     
     // MARK: - Private Properties
     private let incomeCalculationService: IncomeCalculationService
@@ -367,37 +364,9 @@ class EnhancedIncomeViewModel: ObservableObject {
             self?.updateRealTimeData()
         }
         
-        // Start session tracking
-        startSessionTracking()
-        
         // Start statistics updates
         Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
             self?.refreshStatistics()
-        }
-    }
-    
-    private func startSessionTracking() {
-        // Start session when work begins
-        if sessionStartTime == nil && workStatus == .working {
-            sessionStartTime = Date()
-        }
-        
-        // Update session duration every second
-        Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
-            self.updateSessionDuration()
-        }
-    }
-    
-    private func updateSessionDuration() {
-        // Only count session time during working hours
-        if workStatus == .working || workStatus == .overtime {
-            if sessionStartTime == nil {
-                sessionStartTime = Date()
-            }
-            if let start = sessionStartTime {
-                sessionDuration = Date().timeIntervalSince(start)
-            }
         }
     }
     
@@ -563,17 +532,6 @@ extension EnhancedIncomeViewModel {
         }
     }
     
-    /// Formatted session duration (e.g., "2h 34m")
-    var formattedSessionDuration: String {
-        let hours = Int(sessionDuration / 3600)
-        let minutes = Int((sessionDuration.truncatingRemainder(dividingBy: 3600)) / 60)
-        
-        if hours > 0 {
-            return "\(hours)h \(minutes)m"
-        } else {
-            return "\(minutes)m"
-        }
-    }
     
     /// Formatted work schedule time range (e.g., "08:30 - 17:30")
     var formattedWorkSchedule: String {

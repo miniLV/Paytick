@@ -23,7 +23,6 @@ class ValueStreamCalculator: ObservableObject {
     // User Input Configuration
     private var monthlySalary: Double = 0
     private var workDaysPerMonth: Int = 22
-    private var dailyHours: Double = 8
     private var workSchedule: WorkSchedule?
     private var dailyIncome: Double = 0.0
     
@@ -45,10 +44,6 @@ class ValueStreamCalculator: ObservableObject {
         self.workDaysPerMonth = workDaysPerMonth
         self.workSchedule = workSchedule
         
-        if let schedule = workSchedule {
-            self.dailyHours = schedule.totalWorkMinutesPerDay / 60.0
-        }
-        
         calculateBaseValues()
         updateRealTimeValues()
     }
@@ -59,8 +54,15 @@ class ValueStreamCalculator: ObservableObject {
         // This ensures monthly accumulated income ≈ monthly salary at month end
         dailyIncome = calculateDailyIncomeForCurrentMonth()
         
-        // Calculate value per minute based on daily income and daily work hours
-        valuePerMinute = dailyIncome / (dailyHours * 60)
+        // Calculate value per minute based on daily income and actual daily work minutes from schedule
+        // Uses workSchedule.totalWorkMinutesPerDay which is (endTime - startTime - lunchDuration)
+        // NOT a hardcoded 8 hours!
+        let dailyWorkMinutes = workSchedule?.totalWorkMinutesPerDay ?? 480.0 // Fallback to 8 hours only if no schedule
+        guard dailyWorkMinutes > 0 else {
+            valuePerMinute = 0
+            return
+        }
+        valuePerMinute = dailyIncome / dailyWorkMinutes
     }
     
     /// Calculates daily income by dividing monthly salary by actual workdays in current month
@@ -109,34 +111,25 @@ class ValueStreamCalculator: ObservableObject {
         let currentTimeMinutes = getTimeInMinutes(time)
         let startTimeMinutes = getTimeInMinutes(schedule.startTime)
         let endTimeMinutes = getTimeInMinutes(schedule.endTime)
-        let lunchStartMinutes = getTimeInMinutes(schedule.lunchStartTime)
-        let lunchEndMinutes = getTimeInMinutes(schedule.lunchEndTime)
         
         // If work hasn't started yet
         if currentTimeMinutes < startTimeMinutes {
             return 0.0
         }
         
-        // Calculate actual worked minutes, excluding lunch
+        // Simple calculation: current time - start time
+        // No lunch break deduction - work time is simply (end - start)
         var workedMinutes = 0.0
         
         if currentTimeMinutes <= endTimeMinutes {
             // Within normal work hours
             workedMinutes = currentTimeMinutes - startTimeMinutes
-            
-            // Deduct lunch time
-            if currentTimeMinutes > lunchEndMinutes {
-                workedMinutes -= (lunchEndMinutes - lunchStartMinutes)
-            } else if currentTimeMinutes > lunchStartMinutes {
-                workedMinutes -= (currentTimeMinutes - lunchStartMinutes)
-            }
         } else {
-            // Past normal work hours (overtime)
-            workedMinutes = endTimeMinutes - startTimeMinutes - (lunchEndMinutes - lunchStartMinutes)
+            // Past normal work hours - cap at full day
+            workedMinutes = endTimeMinutes - startTimeMinutes
         }
         
-        let result = max(0, workedMinutes)
-        return result
+        return max(0, workedMinutes)
     }
     
     private func calculateTodayIncome(_ time: Date) -> Double {
@@ -171,28 +164,26 @@ class ValueStreamCalculator: ObservableObject {
         let currentTimeMinutes = getTimeInMinutes(now)
         let startTimeMinutes = getTimeInMinutes(schedule.startTime)
         let endTimeMinutes = getTimeInMinutes(schedule.endTime)
-        let lunchStartMinutes = getTimeInMinutes(schedule.lunchStartTime)
-        let lunchEndMinutes = getTimeInMinutes(schedule.lunchEndTime)
         
         // If work hasn't started yet, return 0
         if currentTimeMinutes < startTimeMinutes {
             return 0.0
         }
         
-        // Calculate worked time (excluding lunch)
+        // Simple calculation: current time - start time
+        // No lunch break deduction
         var workedMinutes = currentTimeMinutes - startTimeMinutes
         
-        // Deduct lunch duration if lunch time has passed
-        if currentTimeMinutes > lunchEndMinutes {
-            workedMinutes -= (lunchEndMinutes - lunchStartMinutes)
-        } else if currentTimeMinutes >= lunchStartMinutes {
-            workedMinutes -= (currentTimeMinutes - lunchStartMinutes)
+        // Cap at end of work day
+        if currentTimeMinutes > endTimeMinutes {
+            workedMinutes = endTimeMinutes - startTimeMinutes
         }
         
-        // Total work duration
+        // Total work duration (end - start)
         let totalWorkMinutes = schedule.totalWorkMinutesPerDay
         
         // Progress percentage
+        guard totalWorkMinutes > 0 else { return 0.0 }
         let progress = max(0, workedMinutes) / totalWorkMinutes
         return min(progress, 1.0)
     }
@@ -217,14 +208,11 @@ class ValueStreamCalculator: ObservableObject {
         let currentTimeMinutes = getTimeInMinutes(time)
         let startTimeMinutes = getTimeInMinutes(schedule.startTime)
         let endTimeMinutes = getTimeInMinutes(schedule.endTime)
-        let lunchStartMinutes = getTimeInMinutes(schedule.lunchStartTime)
-        let lunchEndMinutes = getTimeInMinutes(schedule.lunchEndTime)
         
+        // Simple work status: before start / working / overtime
+        // No lunch break status
         if currentTimeMinutes < startTimeMinutes {
             currentWorkStatus = .notStarted
-            isWorkTime = false
-        } else if currentTimeMinutes >= lunchStartMinutes && currentTimeMinutes < lunchEndMinutes {
-            currentWorkStatus = .lunch
             isWorkTime = false
         } else if currentTimeMinutes >= startTimeMinutes && currentTimeMinutes < endTimeMinutes {
             currentWorkStatus = .working
@@ -256,16 +244,11 @@ class ValueStreamCalculator: ObservableObject {
         
         let currentTimeMinutes = getTimeInMinutes(time)
         let endTimeMinutes = getTimeInMinutes(schedule.endTime)
-        let lunchStartMinutes = getTimeInMinutes(schedule.lunchStartTime)
-        let lunchEndMinutes = getTimeInMinutes(schedule.lunchEndTime)
         
         if currentTimeMinutes > endTimeMinutes {
             // During overtime
             isOvertime = true
             overtimeMinutes = currentTimeMinutes - endTimeMinutes
-            
-            // Deduct dinner time during overtime if needed
-            // Simplified handling: calculate overtime income directly
             overtimeIncome = overtimeMinutes * valuePerMinute
         } else {
             isOvertime = false

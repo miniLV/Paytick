@@ -182,21 +182,17 @@ class IncomeCalculationService: IncomeCalculationServiceProtocol, ObservableObje
         let todayStart = getTodayTime(from: workSchedule.startTime, for: currentTime)
         let todayEnd = getTodayTime(from: workSchedule.endTime, for: currentTime)
         
-        
         var workedMinutes = 0.0
         
         // Cap effective time at end of workday - NO automatic overtime!
         // Income should stop accumulating after work hours ("Take Profit")
         let effectiveCurrentTime = min(currentTime, todayEnd)
         
+        // Simple calculation: current time - start time
+        // No lunch break deduction - work time is simply (end - start)
         if effectiveCurrentTime > todayStart {
             workedMinutes = effectiveCurrentTime.timeIntervalSince(todayStart) / 60
-        } else {
         }
-        
-        // Note: We intentionally do NOT add overtime automatically
-        // Users should only be paid for contracted work hours
-        // Overtime would require explicit user action to record
         
         workedMinutes = max(0, workedMinutes)
         

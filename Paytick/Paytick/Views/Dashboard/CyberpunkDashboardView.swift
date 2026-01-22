@@ -1376,11 +1376,6 @@ struct StatusLogContent: View {
                             .font(.system(size: 9, weight: .medium, design: .monospaced))
                             .foregroundColor(statusColor.opacity(0.8))
                     }
-                    
-                    // Session time - Real data
-                    Text("Session: \(enhancedViewModel.formattedSessionDuration)")
-                        .font(.system(size: 9, weight: .medium, design: .monospaced))
-                        .foregroundColor(CyberpunkTheme.cyanPrimary.opacity(0.7))
                 }
                 .padding(.trailing, 56) // Space for icon
                 

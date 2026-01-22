@@ -308,16 +308,9 @@ class StatusBarController: ObservableObject {
     }
     
     private func formatMaskedAmount(_ amount: Double) -> String {
-        // Show dots pattern based on amount magnitude
-        if amount >= 10000 {
-            return "¥••.•k"
-        } else if amount >= 1000 {
-            return "¥••••"
-        } else if amount >= 100 {
-            return "¥•••"
-        } else {
-            return "¥••"
-        }
+        // Show fixed dots pattern to hide amount magnitude
+        // Don't reveal amount range - always show same pattern
+        return "¥••••.••"
     }
 }
 
