@@ -212,7 +212,9 @@ class IncomeCalculationService: IncomeCalculationServiceProtocol, ObservableObje
     func startRealTimeCalculation() {
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
-            self?.updateRealTimeData()
+            autoreleasepool {
+                self?.updateRealTimeData()
+            }
         }
         
         // Initial calculation

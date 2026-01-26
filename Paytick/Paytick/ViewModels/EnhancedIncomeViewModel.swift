@@ -56,6 +56,9 @@ class EnhancedIncomeViewModel: ObservableObject {
     
     private var cancellables = Set<AnyCancellable>()
     
+    // Statistics refresh timer - must be stored to properly invalidate in deinit
+    private var statisticsTimer: Timer?
+    
     // Track previous values to detect changes (initialized in init)
     private var lastKnownReminderMinutes: Int = 0
     private var isInitialPreferencesLoad = true
@@ -125,6 +128,9 @@ class EnhancedIncomeViewModel: ObservableObject {
     
     deinit {
         timerManager.stop()
+        statisticsTimer?.invalidate()
+        statisticsTimer = nil
+        NotificationCenter.default.removeObserver(self)
     }
     
     // MARK: - Public Methods
@@ -364,9 +370,12 @@ class EnhancedIncomeViewModel: ObservableObject {
             self?.updateRealTimeData()
         }
         
-        // Start statistics updates
-        Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
-            self?.refreshStatistics()
+        // Start statistics updates - store timer to properly invalidate in deinit
+        statisticsTimer?.invalidate()
+        statisticsTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
+            autoreleasepool {
+                self?.refreshStatistics()
+            }
         }
     }
     

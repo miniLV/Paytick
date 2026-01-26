@@ -31,6 +31,12 @@ class ValueStreamCalculator: ObservableObject {
     private var workSchedule: WorkSchedule?
     private var dailyIncome: Double = 0.0
     
+    // Caching to avoid repeated expensive calculations
+    private var cachedCompletedWorkDays: Int = 0
+    private var cachedCompletedWorkDaysDate: Date?
+    private var cachedTotalWorkDaysInMonth: Int = 0
+    private var cachedTotalWorkDaysMonth: Int = 0
+    
     init() {
         startRealTimeCalculation()
     }
@@ -49,8 +55,19 @@ class ValueStreamCalculator: ObservableObject {
         self.workDaysPerMonth = workDaysPerMonth
         self.workSchedule = workSchedule
         
+        // Clear caches when configuration changes
+        invalidateCaches()
+        
         calculateBaseValues()
         updateRealTimeValues()
+    }
+    
+    /// Invalidate all caches - call when work schedule or salary changes
+    private func invalidateCaches() {
+        cachedCompletedWorkDays = 0
+        cachedCompletedWorkDaysDate = nil
+        cachedTotalWorkDaysInMonth = 0
+        cachedTotalWorkDaysMonth = 0
     }
     
     // MARK: - Core Calculations (per Gemini specification)
@@ -290,9 +307,15 @@ class ValueStreamCalculator: ObservableObject {
     
     // MARK: - Real-time Updates
     private func startRealTimeCalculation() {
-        // High-frequency update (every 100ms) for ticking effect
-        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            self?.updateRealTimeValues()
+        // Update every 1 second - balances UI responsiveness with memory efficiency
+        // Previous 100ms (0.1s) caused excessive memory growth from:
+        // - Frequent @Published updates triggering Combine pipelines
+        // - Repeated Date object allocations
+        // - Monthly calculation loops running 10x per second
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            autoreleasepool {
+                self?.updateRealTimeValues()
+            }
         }
     }
     
@@ -338,6 +361,13 @@ class ValueStreamCalculator: ObservableObject {
     private func calculateCompletedWorkDaysThisMonth(startOfMonth: Date, currentDate: Date) -> Int {
         guard let schedule = workSchedule else { return 0 }
         
+        // Cache check: only recalculate if the date has changed
+        // This prevents expensive loop from running every second
+        if let cachedDate = cachedCompletedWorkDaysDate,
+           calendar.isDate(cachedDate, inSameDayAs: currentDate) {
+            return cachedCompletedWorkDays
+        }
+        
         // Use the instance calendar (which has proper timezone set)
         var completedDays = 0
         var date = startOfMonth
@@ -353,11 +383,22 @@ class ValueStreamCalculator: ObservableObject {
             date = calendar.date(byAdding: .day, value: 1, to: date) ?? date
         }
         
+        // Update cache
+        cachedCompletedWorkDays = completedDays
+        cachedCompletedWorkDaysDate = currentDate
+        
         return completedDays
     }
     
     private func calculateTotalWorkDaysInMonth(for date: Date) -> Int {
         guard let schedule = workSchedule else { return 0 }
+        
+        let currentMonth = calendar.component(.month, from: date)
+        
+        // Cache check: only recalculate if month changed
+        if cachedTotalWorkDaysMonth == currentMonth && cachedTotalWorkDaysInMonth > 0 {
+            return cachedTotalWorkDaysInMonth
+        }
         
         let startOfMonth = calendar.dateInterval(of: .month, for: date)?.start ?? date
         let range = calendar.range(of: .day, in: .month, for: date)!
@@ -372,6 +413,11 @@ class ValueStreamCalculator: ObservableObject {
                 }
             }
         }
+        
+        // Update cache
+        cachedTotalWorkDaysInMonth = workDays
+        cachedTotalWorkDaysMonth = currentMonth
+        
         return workDays
     }
     

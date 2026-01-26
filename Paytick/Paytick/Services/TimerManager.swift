@@ -154,14 +154,16 @@ class TimerManager: TimerManagerProtocol, ObservableObject {
         let executionStart = Date()
         
         DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            
-            self.lastUpdateTime = Date()
-            self.callback?()
-            
-            // Track execution time for performance monitoring
-            let executionTime = Date().timeIntervalSince(executionStart)
-            self.recordExecutionTime(executionTime)
+            autoreleasepool {
+                guard let self = self else { return }
+                
+                self.lastUpdateTime = Date()
+                self.callback?()
+                
+                // Track execution time for performance monitoring
+                let executionTime = Date().timeIntervalSince(executionStart)
+                self.recordExecutionTime(executionTime)
+            }
         }
     }
     

@@ -293,7 +293,9 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
         stopNotificationTimer()
         
         notificationTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
-            self?.checkAndFireNotifications()
+            autoreleasepool {
+                self?.checkAndFireNotifications()
+            }
         }
         
         // Delay the first check by 2 seconds to avoid immediate triggering when settings change
@@ -521,12 +523,18 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
     
     // MARK: - Setup
     
+    // Timer for updating pending notifications - stored to allow cleanup
+    private var pendingNotificationsTimer: Timer?
+    
     private func setupNotificationCenter() {
         notificationCenter.delegate = self
         updatePendingNotifications()
         
-        Timer.scheduledTimer(withTimeInterval: 60.0, repeats: true) { [weak self] _ in
-            self?.updatePendingNotifications()
+        pendingNotificationsTimer?.invalidate()
+        pendingNotificationsTimer = Timer.scheduledTimer(withTimeInterval: 60.0, repeats: true) { [weak self] _ in
+            autoreleasepool {
+                self?.updatePendingNotifications()
+            }
         }
     }
     
