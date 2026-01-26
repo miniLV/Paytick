@@ -18,7 +18,12 @@ class ValueStreamCalculator: ObservableObject {
     
     // MARK: - Private Properties
     private var timer: Timer?
-    private let calendar = Calendar.current
+    // Use a calendar with explicit timezone to avoid timezone issues
+    private var calendar: Calendar = {
+        var cal = Calendar.current
+        cal.timeZone = TimeZone.current
+        return cal
+    }()
     
     // User Input Configuration
     private var monthlySalary: Double = 0
@@ -273,6 +278,7 @@ class ValueStreamCalculator: ObservableObject {
     }
     
     private func getTimeInMinutes(_ date: Date) -> Double {
+        // Use calendar.component() which is safer than dateComponents(in:from:)
         let hour = calendar.component(.hour, from: date)
         let minute = calendar.component(.minute, from: date)
         return Double(hour * 60 + minute)
@@ -332,7 +338,7 @@ class ValueStreamCalculator: ObservableObject {
     private func calculateCompletedWorkDaysThisMonth(startOfMonth: Date, currentDate: Date) -> Int {
         guard let schedule = workSchedule else { return 0 }
         
-        let calendar = Calendar.current
+        // Use the instance calendar (which has proper timezone set)
         var completedDays = 0
         var date = startOfMonth
         

@@ -217,7 +217,9 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
     }
     
     private func setupNotificationTimes(startTime: Date, endTime: Date, workdays: Set<Weekday>) {
-        let calendar = Calendar.current
+        // Use a calendar with explicit local timezone to avoid timezone issues
+        var calendar = Calendar.current
+        calendar.timeZone = TimeZone.current
         let now = Date()
         
         // Check if today is a workday
@@ -233,13 +235,20 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
         
         // Work START notification (5 minutes before)
         if preferences.workStartEnabled {
-            let startComponents = calendar.dateComponents([.hour, .minute], from: startTime)
-            if let todayStartTime = calendar.date(bySettingHour: startComponents.hour ?? 0,
-                                                   minute: startComponents.minute ?? 0,
+            // Extract hour and minute using local calendar (NOT dateComponents(in:from:) which can have timezone issues)
+            let startHour = calendar.component(.hour, from: startTime)
+            let startMinute = calendar.component(.minute, from: startTime)
+            
+            if let todayStartTime = calendar.date(bySettingHour: startHour,
+                                                   minute: startMinute,
                                                    second: 0,
                                                    of: todayDate) {
                 let notifyTime = calendar.date(byAdding: .minute, value: -5, to: todayStartTime)!
                 targetStartNotifyTime = notifyTime > now ? notifyTime : nil
+                
+                #if DEBUG
+                print("[NotificationService] Start time configured: \(startHour):\(String(format: "%02d", startMinute)), notify at: \(notifyTime), now: \(now)")
+                #endif
             }
         } else {
             targetStartNotifyTime = nil
@@ -247,13 +256,28 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
         
         // Work END notification (N minutes before)
         if preferences.workEndEnabled {
-            let endComponents = calendar.dateComponents([.hour, .minute], from: endTime)
-            if let todayEndTime = calendar.date(bySettingHour: endComponents.hour ?? 0,
-                                                 minute: endComponents.minute ?? 0,
+            // Extract hour and minute using local calendar (NOT dateComponents(in:from:) which can have timezone issues)
+            let endHour = calendar.component(.hour, from: endTime)
+            let endMinute = calendar.component(.minute, from: endTime)
+            
+            // Sanity check: if endHour is before typical work hours (e.g., < 12), it might be a timezone bug
+            // Log a warning but still proceed
+            #if DEBUG
+            if endHour < 12 {
+                print("[NotificationService] WARNING: End hour (\(endHour)) is before noon. Possible timezone issue with stored endTime: \(endTime)")
+            }
+            #endif
+            
+            if let todayEndTime = calendar.date(bySettingHour: endHour,
+                                                 minute: endMinute,
                                                  second: 0,
                                                  of: todayDate) {
                 let notifyTime = calendar.date(byAdding: .minute, value: -preferences.workEndReminderMinutes, to: todayEndTime)!
                 targetEndNotifyTime = notifyTime > now ? notifyTime : nil
+                
+                #if DEBUG
+                print("[NotificationService] End time configured: \(endHour):\(String(format: "%02d", endMinute)), notify at: \(notifyTime), now: \(now)")
+                #endif
             }
         } else {
             targetEndNotifyTime = nil
@@ -272,8 +296,11 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
             self?.checkAndFireNotifications()
         }
         
-        // Check immediately
-        checkAndFireNotifications()
+        // Delay the first check by 2 seconds to avoid immediate triggering when settings change
+        // This prevents false positives when the user is actively adjusting notification times
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            self?.checkAndFireNotifications()
+        }
     }
     
     private func stopNotificationTimer() {
@@ -283,7 +310,8 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
     
     private func checkAndFireNotifications() {
         let now = Date()
-        let calendar = Calendar.current
+        var calendar = Calendar.current
+        calendar.timeZone = TimeZone.current
         
         // Verify today is still a workday
         let currentWeekday = calendar.component(.weekday, from: now)
@@ -347,7 +375,18 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
     }
     
     /// Reset notification flags (call when schedule changes)
+    /// Note: Only resets the schedule update flag, NOT the daily work notification flags
+    /// This prevents duplicate work start/end notifications when settings are changed
     func resetNotificationFlags() {
+        scheduleUpdateNotificationSent = nil
+        // Do NOT reset workStartNotificationSentToday and workEndNotificationSentToday here
+        // These should only reset at midnight (when isDateInToday returns false)
+        // Resetting them here causes duplicate notifications when settings are changed
+    }
+    
+    /// Force reset all notification flags including daily work notifications
+    /// Use this only when you explicitly want to re-enable notifications for today
+    func forceResetAllNotificationFlags() {
         scheduleUpdateNotificationSent = nil
         workStartNotificationSentToday = nil
         workEndNotificationSentToday = nil
@@ -364,24 +403,31 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
         }
         scheduleUpdateNotificationSent = now
         
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
-        formatter.locale = Locale(identifier: "en_US_POSIX")
+        // Use calendar with explicit local timezone
+        var calendar = Calendar.current
+        calendar.timeZone = TimeZone.current
         
-        let calendar = Calendar.current
-        let endComponents = calendar.dateComponents([.hour, .minute], from: endTime)
-        let totalMinutes = (endComponents.hour ?? 0) * 60 + (endComponents.minute ?? 0) - reminderMinutes
+        // Extract hour and minute using local calendar component method (safer than dateComponents(in:from:))
+        let endHour = calendar.component(.hour, from: endTime)
+        let endMinute = calendar.component(.minute, from: endTime)
         
-        var reminderComponents = DateComponents()
-        reminderComponents.hour = max(0, totalMinutes / 60)
-        reminderComponents.minute = max(0, totalMinutes % 60)
+        // Calculate reminder time
+        let totalMinutes = endHour * 60 + endMinute - reminderMinutes
+        let reminderHour = max(0, totalMinutes / 60)
+        let reminderMinute = max(0, totalMinutes % 60)
         
-        let reminderTime = calendar.date(from: reminderComponents) ?? endTime
+        // Format times for display
+        let endTimeStr = String(format: "%d:%02d %@", endHour > 12 ? endHour - 12 : (endHour == 0 ? 12 : endHour), endMinute, endHour >= 12 ? "PM" : "AM")
+        let reminderTimeStr = String(format: "%d:%02d %@", reminderHour > 12 ? reminderHour - 12 : (reminderHour == 0 ? 12 : reminderHour), reminderMinute, reminderHour >= 12 ? "PM" : "AM")
+        
+        #if DEBUG
+        print("[NotificationService] Schedule update - End time: \(endHour):\(String(format: "%02d", endMinute)), Reminder: \(reminderMinutes) min before, raw endTime: \(endTime)")
+        #endif
         
         fireNotification(
             id: "\(NotificationType.scheduleUpdate.rawValue)_\(now.timeIntervalSince1970)",
             title: "✅ \(NotificationType.scheduleUpdate.title)",
-            body: "Work end reminder set for \(formatter.string(from: reminderTime)) (\(reminderMinutes) min before \(formatter.string(from: endTime)))"
+            body: "Work end reminder set for \(reminderTimeStr) (\(reminderMinutes) min before \(endTimeStr))"
         )
     }
     

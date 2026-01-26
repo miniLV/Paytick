@@ -50,10 +50,17 @@ struct WorkSchedule: Codable, Identifiable {
     var totalWorkMinutesPerDay: Double {
         // Simple calculation: work time = end time - start time
         // No lunch break deduction
+        // Use calendar.component() which is safer and less prone to timezone issues
         let calendar = Calendar.current
         
-        let startMinutes = calendar.component(.hour, from: startTime) * 60 + calendar.component(.minute, from: startTime)
-        let endMinutes = calendar.component(.hour, from: endTime) * 60 + calendar.component(.minute, from: endTime)
+        // Extract hour and minute using component() method
+        let startHour = calendar.component(.hour, from: startTime)
+        let startMinute = calendar.component(.minute, from: startTime)
+        let endHour = calendar.component(.hour, from: endTime)
+        let endMinute = calendar.component(.minute, from: endTime)
+        
+        let startMinutes = startHour * 60 + startMinute
+        let endMinutes = endHour * 60 + endMinute
         
         // Work minutes = end - start (e.g., 17:30 - 8:30 = 9 hours = 540 minutes)
         let workMinutes = Double(endMinutes - startMinutes)

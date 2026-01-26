@@ -24,7 +24,12 @@ class IncomeCalculationService: IncomeCalculationServiceProtocol, ObservableObje
     @Published var todayWorkedMinutes: Double = 0
     
     // MARK: - Private Properties
-    private let calendar = Calendar.current
+    // Use a calendar with explicit timezone to avoid timezone issues
+    private var calendar: Calendar = {
+        var cal = Calendar.current
+        cal.timeZone = TimeZone.current
+        return cal
+    }()
     private let repositoryManager = RepositoryManager.shared
     private var currentUserProfile: UserProfile?
     private var currentWorkSchedule: WorkSchedule?
@@ -296,15 +301,21 @@ class IncomeCalculationService: IncomeCalculationServiceProtocol, ObservableObje
     }
     
     private func getTodayTime(from time: Date, for currentDate: Date) -> Date {
-        let components = calendar.dateComponents([.hour, .minute], from: time)
-        let todayComponents = calendar.dateComponents([.year, .month, .day], from: currentDate)
+        // Extract hour/minute using calendar.component() which is safer than dateComponents(in:from:)
+        let hour = calendar.component(.hour, from: time)
+        let minute = calendar.component(.minute, from: time)
+        
+        // Get today's date components
+        let year = calendar.component(.year, from: currentDate)
+        let month = calendar.component(.month, from: currentDate)
+        let day = calendar.component(.day, from: currentDate)
         
         var finalComponents = DateComponents()
-        finalComponents.year = todayComponents.year
-        finalComponents.month = todayComponents.month
-        finalComponents.day = todayComponents.day
-        finalComponents.hour = components.hour
-        finalComponents.minute = components.minute
+        finalComponents.year = year
+        finalComponents.month = month
+        finalComponents.day = day
+        finalComponents.hour = hour
+        finalComponents.minute = minute
         finalComponents.second = 0
         
         return calendar.date(from: finalComponents) ?? currentDate
