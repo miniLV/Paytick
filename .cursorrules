@@ -1,0 +1,37 @@
+# Paytick Project Rules
+
+## Git Commit Guidelines
+
+### Language Requirements
+- **Git commit messages MUST be written in English only**
+- No Chinese or other non-English languages in commit messages
+- This applies to both the subject line and the body
+
+### Commit Message Format
+- Use conventional commit format: `type: description`
+- Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `style`, `perf`
+- Keep subject line under 72 characters
+- Use imperative mood ("add feature" not "added feature")
+
+### Examples
+```
+# Good
+fix: resolve notification timezone issues
+feat: add dark mode support
+refactor: simplify income calculation logic
+
+# Bad
+fix: 修复通知时间问题
+feat: 添加深色模式
+```
+
+## Code Style
+
+### Comments
+- Code comments should be written in English
+- This ensures better readability for international developers
+
+### Swift Conventions
+- Follow Swift API Design Guidelines
+- Use SwiftUI best practices
+- Prefer `calendar.component()` over `dateComponents(in:from:)` for timezone safety
