@@ -1,0 +1,191 @@
+/* 
+  Localizable.strings (Chinese Simplified)
+  Paytick
+  
+  简体中文本地化文件
+*/
+
+// MARK: - Common
+"common.settings" = "设置";
+"common.quit" = "退出";
+"common.save" = "保存";
+"common.cancel" = "取消";
+"common.done" = "完成";
+"common.reset" = "重置";
+"common.enable" = "启用";
+"common.disable" = "禁用";
+"common.days" = "天";
+"common.min" = "分钟";
+"common.sec" = "秒";
+
+// MARK: - Language & Currency
+"language.system" = "跟随系统";
+"currency.system" = "跟随系统";
+
+// MARK: - Dashboard
+"dashboard.todayGoal" = "今日目标";
+"dashboard.monthlyGoal" = "月度目标";
+"dashboard.privacyMode" = "隐私模式";
+"dashboard.overtime" = "加班";
+"dashboard.estLoss" = "预估损失";
+"dashboard.rate" = "费率";
+"dashboard.overtimeWarning" = "检测到无偿加班";
+"dashboard.overtimeHint" = "建议结束工作";
+"dashboard.todayEarned" = "今日已赚:";
+"dashboard.progress" = "进度";
+"dashboard.tapToSetGoal" = "点击设置目标";
+"dashboard.trackTarget" = "追踪你的月度\n收入目标";
+"dashboard.amountsHidden" = "金额已隐藏";
+"dashboard.visible" = "可见";
+"dashboard.daysActive" = "%d 天工作日";
+"dashboard.monthly" = "本月";
+
+// Work Status (descriptive - translate these)
+"dashboard.working" = "工作中";
+"dashboard.lunch" = "午休";
+"dashboard.finished" = "已完成";
+"dashboard.notStarted" = "未开始";
+"dashboard.absent" = "缺勤";
+"dashboard.holiday" = "假期";
+
+// MARK: - Settings Sidebar
+"settings.title" = "设置";
+"settings.subtitle" = "配置你的收入\n追踪偏好";
+"settings.tab.personal" = "个人信息";
+"settings.tab.privacy" = "隐私";
+"settings.tab.notifications" = "通知";
+"settings.tab.advanced" = "高级";
+
+// MARK: - Settings Headers
+"settings.personal.title" = "个人信息";
+"settings.personal.subtitle" = "配置你的工资、工作时间和收入追踪偏好";
+"settings.privacy.title" = "隐私设置";
+"settings.privacy.subtitle" = "控制财务数据的显示和保护方式";
+"settings.notifications.title" = "通知";
+"settings.notifications.subtitle" = "管理提醒和通知偏好";
+"settings.advanced.title" = "高级设置";
+"settings.advanced.subtitle" = "面向高级用户的配置选项";
+
+// MARK: - Personal Info Section
+"settings.financial.title" = "财务信息";
+"settings.salary.title" = "月薪";
+"settings.salary.description" = "税前月薪总额";
+"settings.currency.title" = "货币";
+"settings.currency.description" = "选择你的收入货币";
+"settings.workdays.title" = "每月工作天数";
+"settings.workdays.description" = "平均工作天数";
+
+// MARK: - Work Schedule Section
+"settings.schedule.title" = "工作时间";
+"settings.startTime.title" = "上班时间";
+"settings.endTime.title" = "下班时间";
+"settings.workingDays.title" = "工作日";
+"settings.workingDays.description" = "选择你的常规工作日";
+
+// MARK: - Monthly Goal Section
+"settings.goal.title" = "月度目标";
+"settings.goal.enable" = "启用月度目标";
+"settings.goal.enableDescription" = "追踪你的月度目标进度";
+"settings.goal.targetAmount" = "目标金额";
+"settings.goal.targetDescription" = "要实现的月收入目标";
+"settings.goal.rewardItem" = "奖励物品";
+"settings.goal.rewardDescription" = "达成目标后想买什么？";
+"settings.goal.currentProgress" = "当前进度";
+
+// MARK: - Privacy Section
+"settings.privacy.enable" = "启用隐私模式";
+"settings.privacy.enableDescription" = "启用后隐藏敏感财务金额";
+"settings.privacy.displayMode" = "显示模式";
+"settings.privacy.emojiMode" = "🎮 表情模式";
+"settings.privacy.emojiDescription" = "用有趣的表情符号替代金额 - 像游戏数据一样";
+"settings.privacy.blurMode" = "🌫️ 模糊模式";
+"settings.privacy.blurDescription" = "对金额应用高斯模糊效果";
+"settings.privacy.dotsMode" = "••• 圆点模式";
+"settings.privacy.dotsDescription" = "用圆点替换所有数字（经典样式）";
+"settings.privacy.recommended" = "推荐";
+"settings.privacy.emojiTheme" = "表情主题";
+"settings.privacy.preview" = "预览";
+
+// Emoji Presets
+"settings.emoji.fruits" = "水果";
+"settings.emoji.fruitsDesc" = "新鲜健康";
+"settings.emoji.rockets" = "火箭";
+"settings.emoji.rocketsDesc" = "太空冒险";
+"settings.emoji.crypto" = "加密货币";
+"settings.emoji.cryptoDesc" = "数字财富";
+"settings.emoji.custom" = "自定义";
+"settings.emoji.customDesc" = "你的专属组合";
+
+// MARK: - Notifications Section
+"settings.notifications.blocked" = "通知已被阻止";
+"settings.notifications.blockedDesc" = "请在系统设置中启用通知权限";
+"settings.notifications.disabled" = "通知已禁用";
+"settings.notifications.disabledDesc" = "点击启用通知权限";
+"settings.notifications.enabled" = "通知已启用";
+"settings.notifications.enabledDesc" = "你将收到工作提醒和通知";
+"settings.notifications.openSettings" = "打开设置";
+"settings.notifications.manage" = "管理";
+"settings.notifications.requesting" = "请求中...";
+
+"settings.notifications.workReminders" = "工作提醒";
+"settings.notifications.workStart" = "上班提醒";
+"settings.notifications.workStartDesc" = "上班前 5 分钟提醒";
+"settings.notifications.workEnd" = "下班提醒";
+"settings.notifications.workEndDesc" = "下班前提醒";
+"settings.notifications.reminderTime" = "提醒时间";
+"settings.notifications.reminderTimeDesc" = "下班前多少分钟提醒";
+"settings.notifications.overtimeWarning" = "加班警告";
+"settings.notifications.overtimeWarningDesc" = "加班时提醒你";
+
+"settings.notifications.sound" = "声音";
+"settings.notifications.soundEnabled" = "通知声音";
+"settings.notifications.soundDesc" = "播放通知声音";
+
+// MARK: - Advanced Section
+"settings.advanced.language" = "语言";
+"settings.advanced.languageTitle" = "应用语言";
+"settings.advanced.languageDesc" = "选择你偏好的语言";
+
+"settings.advanced.dataManagement" = "数据管理";
+"settings.advanced.resetAll" = "重置所有设置";
+"settings.advanced.resetDesc" = "清除所有数据并恢复默认值";
+"settings.advanced.resetConfirm" = "确定重置所有设置？";
+"settings.advanced.resetMessage" = "这将清除所有配置数据，此操作无法撤销。";
+
+"settings.advanced.performance" = "性能";
+"settings.advanced.updateInterval" = "更新间隔";
+"settings.advanced.updateIntervalDesc" = "收入刷新频率（秒）";
+"settings.advanced.launchAtLogin" = "登录时启动";
+"settings.advanced.launchAtLoginDesc" = "登录时自动启动 Paytick";
+
+"settings.advanced.shortcuts" = "键盘快捷键";
+"settings.advanced.togglePrivacy" = "切换隐私模式";
+"settings.advanced.togglePrivacyDesc" = "快速隐藏/显示收入数据";
+"settings.advanced.clickToCustomize" = "点击快捷键自定义";
+"settings.advanced.resetShortcut" = "重置为 ⌃⌥P";
+"settings.advanced.pressKeys" = "按下按键...";
+
+"settings.advanced.debug" = "调试";
+"settings.advanced.appVersion" = "应用版本";
+"settings.advanced.macosVersion" = "macOS 版本";
+"settings.advanced.dataStorage" = "数据存储";
+
+// MARK: - Footer
+"settings.footer.autoSave" = "所有更改自动保存";
+"settings.footer.running" = "运行中";
+
+// MARK: - Weekdays
+"weekday.mon" = "周一";
+"weekday.tue" = "周二";
+"weekday.wed" = "周三";
+"weekday.thu" = "周四";
+"weekday.fri" = "周五";
+"weekday.sat" = "周六";
+"weekday.sun" = "周日";
+
+// MARK: - Validation Errors
+"error.invalidSalary" = "请输入有效的工资金额";
+"error.invalidGoalAmount" = "请输入有效的目标金额";
+"error.invalidSchedule" = "下班时间必须晚于上班时间";
+"error.selectOneDay" = "请至少选择一天";
+

@@ -99,7 +99,7 @@ struct AnimatedIncomeText: View {
     }
     
     private func formatCurrency(_ amount: Double) -> String {
-        return String(format: "¥%.2f", amount)
+        return CurrencyManager.shared.formatAmount(amount)
     }
 }
 
@@ -494,7 +494,7 @@ struct HeroEarningsCard: View {
                 if privacySettings.isPrivacyModeEnabled {
                     switch privacySettings.displayMode {
                     case .dots:
-                        Text("¥••,•••.••")
+                        Text("\(CurrencyManager.shared.currencySymbol)••,•••.••")
                             .font(.system(size: 48, weight: .black, design: .monospaced))
                             .foregroundStyle(
                                 LinearGradient(
@@ -544,7 +544,7 @@ struct HeroEarningsCard: View {
                     Image(systemName: "bolt.fill")
                         .font(.system(size: 10))
                         .foregroundColor(CyberpunkTheme.cyanPrimary)
-                    Text(maskAmount("¥\(String(format: "%.2f", enhancedViewModel.minuteRate))/min", privacyEnabled: privacySettings.isPrivacyModeEnabled))
+                    Text(maskAmount("\(CurrencyManager.shared.currencySymbol)\(String(format: "%.2f", enhancedViewModel.minuteRate))/\("common.min".localized)", privacyEnabled: privacySettings.isPrivacyModeEnabled))
                         .font(.system(size: 12, weight: .medium, design: .monospaced))
                         .foregroundColor(CyberpunkTheme.cyanPrimary)
                 }
@@ -557,7 +557,7 @@ struct HeroEarningsCard: View {
                     Image(systemName: "externaldrive.fill")
                         .font(.system(size: 10))
                         .foregroundColor(CyberpunkTheme.purplePrimary)
-                    Text(maskAmount("Monthly ¥\(String(format: "%.0f", enhancedViewModel.getMonthlyAccumulatedIncome()))", privacyEnabled: privacySettings.isPrivacyModeEnabled))
+                    Text(maskAmount("\("dashboard.monthly".localized) \(CurrencyManager.shared.currencySymbol)\(String(format: "%.0f", enhancedViewModel.getMonthlyAccumulatedIncome()))", privacyEnabled: privacySettings.isPrivacyModeEnabled))
                         .font(.system(size: 12, weight: .medium, design: .monospaced))
                         .foregroundColor(CyberpunkTheme.purplePrimary)
                 }
@@ -572,23 +572,23 @@ struct HeroEarningsCard: View {
             HStack(spacing: 12) {
                 // Overtime Duration
                 OvertimeStatBox(
-                    label: "Overtime",
+                    label: "dashboard.overtime".localized,
                     value: enhancedViewModel.formattedOvertimeDuration,
                     color: CyberpunkTheme.redPrimary
                 )
                 
                 // Estimated Loss
                 OvertimeStatBox(
-                    label: "Est. Loss",
-                    value: privacySettings.isPrivacyModeEnabled ? "¥•••" : "¥\(String(format: "%.0f", enhancedViewModel.overtimeLoss))",
+                    label: "dashboard.estLoss".localized,
+                    value: privacySettings.isPrivacyModeEnabled ? "\(CurrencyManager.shared.currencySymbol)•••" : "\(CurrencyManager.shared.currencySymbol)\(String(format: "%.0f", enhancedViewModel.overtimeLoss))",
                     color: CyberpunkTheme.orangePrimary
                 )
                 
                 // Rate Loss
                 OvertimeStatBox(
-                    label: "Rate",
-                    value: privacySettings.isPrivacyModeEnabled ? "¥•.••" : "¥\(String(format: "%.2f", enhancedViewModel.minuteRate))",
-                    subValue: "/min",
+                    label: "dashboard.rate".localized,
+                    value: privacySettings.isPrivacyModeEnabled ? "\(CurrencyManager.shared.currencySymbol)•.••" : "\(CurrencyManager.shared.currencySymbol)\(String(format: "%.2f", enhancedViewModel.minuteRate))",
+                    subValue: "/\("common.min".localized)",
                     color: CyberpunkTheme.yellowPrimary
                 )
             }
@@ -600,10 +600,10 @@ struct HeroEarningsCard: View {
                     .foregroundColor(CyberpunkTheme.redPrimary)
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Unpaid overtime detected")
+                    Text("dashboard.overtimeWarning".localized)
                         .font(.system(size: 11, weight: .bold, design: .monospaced))
                         .foregroundColor(CyberpunkTheme.redPrimary.opacity(0.9))
-                    Text("Consider ending your work session")
+                    Text("dashboard.overtimeHint".localized)
                         .font(.system(size: 10, design: .monospaced))
                         .foregroundColor(CyberpunkTheme.redPrimary.opacity(0.6))
                 }
@@ -627,11 +627,11 @@ struct HeroEarningsCard: View {
                     .font(.system(size: 14))
                     .foregroundColor(CyberpunkTheme.greenPrimary)
                 
-                Text("Today Earned:")
+                Text("dashboard.todayEarned".localized)
                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .foregroundColor(.white.opacity(0.7))
                 
-                Text(privacySettings.isPrivacyModeEnabled ? "¥•••.••" : formatCurrency(enhancedViewModel.currentIncome))
+                Text(privacySettings.isPrivacyModeEnabled ? CurrencyManager.shared.formatMaskedAmount() : formatCurrency(enhancedViewModel.currentIncome))
                     .font(.system(size: 14, weight: .bold, design: .monospaced))
                     .foregroundColor(CyberpunkTheme.greenPrimary)
             }
@@ -646,12 +646,7 @@ struct HeroEarningsCard: View {
     }
     
     private func formatCurrency(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.minimumFractionDigits = 2
-        formatter.maximumFractionDigits = 2
-        let formatted = formatter.string(from: NSNumber(value: amount)) ?? "0.00"
-        return "¥\(formatted)"
+        return CurrencyManager.shared.formatAmount(amount)
     }
     
     private func maskAmount(_ text: String, privacyEnabled: Bool) -> String {
@@ -857,7 +852,7 @@ struct QuestLogContent: View {
                     Image(systemName: "flame.fill")
                         .font(.system(size: 14))
                         .foregroundColor(CyberpunkTheme.orangePrimary)
-                    Text("Today's Goal")
+                    Text("dashboard.todayGoal".localized)
                         .font(.system(size: 12, weight: .bold, design: .monospaced))
                         .foregroundColor(.white)
                 }
@@ -865,7 +860,7 @@ struct QuestLogContent: View {
                 // Progress Section - with padding right for icon
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        Text("Progress")
+                        Text("dashboard.progress".localized)
                             .font(.system(size: 9, weight: .medium, design: .monospaced))
                             .foregroundColor(CyberpunkTheme.cyanPrimary.opacity(0.7))
                         Spacer()
@@ -1005,7 +1000,7 @@ struct LootItemContent: View {
                             .foregroundColor(.white)
                             .lineLimit(1)
                     } else {
-                        Text("Monthly Goal")
+                        Text("dashboard.monthlyGoal".localized)
                             .font(.system(size: 12, weight: .bold, design: .monospaced))
                             .foregroundColor(.white)
                     }
@@ -1059,7 +1054,7 @@ struct LootItemContent: View {
                                     .stroke(CyberpunkTheme.orangePrimary.opacity(0.2), lineWidth: 1)
                             )
                             
-                            Text("¥\(String(format: "%.0f", enhancedViewModel.getMonthlyAccumulatedIncome())) / ¥\(String(format: "%.0f", goalTargetAmount))")
+                            Text("\(CurrencyManager.shared.currencySymbol)\(String(format: "%.0f", enhancedViewModel.getMonthlyAccumulatedIncome())) / \(CurrencyManager.shared.currencySymbol)\(String(format: "%.0f", goalTargetAmount))")
                                 .font(.system(size: 9, weight: .medium, design: .monospaced))
                                 .foregroundColor(CyberpunkTheme.cyanPrimary.opacity(0.7))
                         }
@@ -1074,11 +1069,11 @@ struct LootItemContent: View {
                             Spacer()
                         }
                         
-                        Text("Tap to set a goal")
+                        Text("dashboard.tapToSetGoal".localized)
                             .font(.system(size: 10, weight: .medium, design: .monospaced))
                             .foregroundColor(CyberpunkTheme.purplePrimary.opacity(0.6))
                         
-                        Text("Track your monthly\nearnings target")
+                        Text("dashboard.trackTarget".localized)
                             .font(.system(size: 9, weight: .medium, design: .monospaced))
                             .foregroundColor(.gray.opacity(0.5))
                             .lineSpacing(2)
@@ -1200,7 +1195,7 @@ struct PrivacySysContent: View {
             VStack(alignment: .leading, spacing: 6) {
                 // Title row
                 HStack(spacing: 6) {
-                    Text("Privacy Mode")
+                    Text("dashboard.privacyMode".localized)
                         .font(.system(size: 12, weight: .bold, design: .monospaced))
                         .foregroundColor(.white)
                 }
@@ -1237,7 +1232,7 @@ struct PrivacySysContent: View {
                         Image(systemName: privacySettings.isPrivacyModeEnabled ? "eye.slash.fill" : "eye.fill")
                             .font(.system(size: 9))
                             .foregroundColor(CyberpunkTheme.cyanPrimary.opacity(0.8))
-                        Text(privacySettings.isPrivacyModeEnabled ? "Amounts hidden" : "Visible")
+                        Text(privacySettings.isPrivacyModeEnabled ? "dashboard.amountsHidden".localized : "dashboard.visible".localized)
                             .font(.system(size: 9, weight: .medium, design: .monospaced))
                             .foregroundColor(CyberpunkTheme.cyanPrimary.opacity(0.8))
                     }
@@ -1314,13 +1309,13 @@ struct StatusLogContent: View {
     
     private var statusText: String {
         switch enhancedViewModel.workStatus {
-        case .working: return "Working"
-        case .lunch: return "Lunch"
-        case .overtime: return "Overtime"
-        case .finished: return "Finished"
-        case .notStarted: return "Not Started"
-        case .absent: return "Absent"
-        case .holiday: return "Holiday"
+        case .working: return "dashboard.working".localized
+        case .lunch: return "dashboard.lunch".localized
+        case .overtime: return "dashboard.overtime".localized
+        case .finished: return "dashboard.finished".localized
+        case .notStarted: return "dashboard.notStarted".localized
+        case .absent: return "dashboard.absent".localized
+        case .holiday: return "dashboard.holiday".localized
         }
     }
     
@@ -1453,11 +1448,11 @@ struct UserDatContent: View {
             // Main content
             VStack(alignment: .leading, spacing: 2) {
                 let salary = enhancedViewModel.userProfile?.monthlySalary ?? 4200
-                Text(maskAmount("¥\(String(format: "%.0f", salary))", privacyEnabled: privacySettings.isPrivacyModeEnabled))
+                Text(maskAmount("\(CurrencyManager.shared.currencySymbol)\(String(format: "%.0f", salary))", privacyEnabled: privacySettings.isPrivacyModeEnabled))
                     .font(.system(size: 12, weight: .bold, design: .monospaced))
                     .foregroundColor(.white)
                 
-                Text("\(workDays) days active")
+                Text("dashboard.daysActive".localized(with: workDays))
                     .font(.system(size: 9, weight: .medium, design: .monospaced))
                     .foregroundColor(CyberpunkTheme.cyanPrimary.opacity(0.7))
                 
@@ -1665,7 +1660,7 @@ struct TerminalFooter: View {
                         .font(.system(size: 12))
                         .foregroundColor(isSettingsHovered ? CyberpunkTheme.cyanPrimary.opacity(0.8) : CyberpunkTheme.cyanPrimary)
                         .rotationEffect(.degrees(gearRotation))
-                    Text("Settings")
+                    Text("common.settings".localized)
                         .font(.system(size: 12, weight: .medium, design: .monospaced))
                         .foregroundColor(isSettingsHovered ? CyberpunkTheme.cyanPrimary.opacity(0.8) : CyberpunkTheme.cyanPrimary)
                 }
@@ -1697,7 +1692,7 @@ struct TerminalFooter: View {
                         .font(.system(size: 12))
                         .foregroundColor(isQuitHovered ? CyberpunkTheme.redPrimary.opacity(0.8) : CyberpunkTheme.redPrimary)
                         .scaleEffect(isQuitHovered ? 1.1 : 1.0)
-                    Text("Quit")
+                    Text("common.quit".localized)
                         .font(.system(size: 12, weight: .medium, design: .monospaced))
                         .foregroundColor(isQuitHovered ? CyberpunkTheme.redPrimary.opacity(0.8) : CyberpunkTheme.redPrimary)
                 }

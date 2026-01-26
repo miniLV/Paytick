@@ -106,6 +106,16 @@ class StatusBarController: ObservableObject {
             }
             .store(in: &cancellables)
         
+        // Listen for currency changes
+        NotificationCenter.default.addObserver(forName: .currencyDidChange, object: nil, queue: .main) { [weak self] _ in
+            self?.updateStatusBarDisplay()
+        }
+        
+        // Listen for language changes
+        NotificationCenter.default.addObserver(forName: .languageDidChange, object: nil, queue: .main) { [weak self] _ in
+            self?.updateStatusBarDisplay()
+        }
+        
         // Initial display update
         updateStatusBarDisplay()
         
@@ -139,7 +149,7 @@ class StatusBarController: ObservableObject {
         if let event = NSApp.currentEvent {
             if event.type == .rightMouseUp {
                 let menu = NSMenu()
-                menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+                menu.addItem(NSMenuItem(title: "common.quit".localized, action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
                 statusItem.menu = menu
                 menu.popUp(positioning: nil, at: NSPoint(x: 0, y: statusItem.button?.bounds.height ?? 0), in: statusItem.button)
                 statusItem.menu = nil
@@ -298,19 +308,13 @@ class StatusBarController: ObservableObject {
     }
     
     private func formatStatusBarAmount(_ amount: Double) -> String {
-        if amount >= 10000 {
-            return String(format: "¥%.1fk", amount / 1000)
-        } else if amount >= 1000 {
-            return String(format: "¥%.0f", amount)
-        } else {
-            return String(format: "¥%.2f", amount)
-        }
+        return CurrencyManager.shared.formatCompactAmount(amount)
     }
     
     private func formatMaskedAmount(_ amount: Double) -> String {
         // Show fixed dots pattern to hide amount magnitude
         // Don't reveal amount range - always show same pattern
-        return "¥••••.••"
+        return CurrencyManager.shared.formatMaskedAmount()
     }
 }
 

@@ -94,10 +94,10 @@ struct CyberpunkSettingsView: View {
 
 // MARK: - Settings Tab Enum
 enum CyberpunkSettingsTab: String, CaseIterable {
-    case personal = "Personal Info"
-    case privacy = "Privacy"
-    case notifications = "Notifications"
-    case advanced = "Advanced"
+    case personal = "personal"
+    case privacy = "privacy"
+    case notifications = "notifications"
+    case advanced = "advanced"
     
     var icon: String {
         switch self {
@@ -117,21 +117,30 @@ enum CyberpunkSettingsTab: String, CaseIterable {
         }
     }
     
+    var displayName: String {
+        switch self {
+        case .personal: return "settings.tab.personal".localized
+        case .privacy: return "settings.tab.privacy".localized
+        case .notifications: return "settings.tab.notifications".localized
+        case .advanced: return "settings.tab.advanced".localized
+        }
+    }
+    
     var headerTitle: String {
         switch self {
-        case .personal: return "Personal Information"
-        case .privacy: return "Privacy Settings"
-        case .notifications: return "Notifications"
-        case .advanced: return "Advanced Settings"
+        case .personal: return "settings.personal.title".localized
+        case .privacy: return "settings.privacy.title".localized
+        case .notifications: return "settings.notifications.title".localized
+        case .advanced: return "settings.advanced.title".localized
         }
     }
     
     var headerSubtitle: String {
         switch self {
-        case .personal: return "Configure your salary, work schedule, and income tracking preferences"
-        case .privacy: return "Control how your financial data is displayed and protected"
-        case .notifications: return "Manage alerts and notification preferences"
-        case .advanced: return "Advanced configuration options for power users"
+        case .personal: return "settings.personal.subtitle".localized
+        case .privacy: return "settings.privacy.subtitle".localized
+        case .notifications: return "settings.notifications.subtitle".localized
+        case .advanced: return "settings.advanced.subtitle".localized
         }
     }
 }
@@ -151,7 +160,7 @@ struct CyberpunkSettingsSidebar: View {
         VStack(spacing: 0) {
             // Header
             VStack(alignment: .leading, spacing: 4) {
-                Text("Settings")
+                Text("settings.title".localized)
                     .font(.system(size: 20, weight: .black, design: .monospaced))
                     .foregroundStyle(
                         LinearGradient(
@@ -161,7 +170,7 @@ struct CyberpunkSettingsSidebar: View {
                         )
                     )
                 
-                Text("Configure your income\ntracking preferences")
+                Text("settings.subtitle".localized)
                     .font(.system(size: 10, weight: .medium, design: .monospaced))
                     .foregroundColor(CyberpunkTheme.greenPrimary.opacity(0.5))
                     .lineSpacing(2)
@@ -283,7 +292,7 @@ struct CyberpunkSidebarItem: View {
                     .opacity(isActive ? 1 : 0.8)
                     .animation(isActive ? .easeInOut(duration: 1).repeatForever(autoreverses: true) : .default, value: isActive)
                 
-                Text(tab.rawValue)
+                Text(tab.displayName)
                     .font(.system(size: 14, weight: isActive ? .bold : .medium, design: .monospaced))
                     .foregroundColor(isActive ? .white : .gray.opacity(0.6))
                 
@@ -389,7 +398,7 @@ struct CyberpunkSettingsFooter: View {
                     .frame(width: 6, height: 6)
                     .opacity(runningPulse ? 1 : 0.5)
                 
-                Text("RUNNING")
+                Text("settings.footer.running".localized)
                     .font(.system(size: 12, weight: .bold, design: .monospaced))
                     .foregroundColor(CyberpunkTheme.greenPrimary)
             }
@@ -397,7 +406,7 @@ struct CyberpunkSettingsFooter: View {
             
             Spacer()
             
-            Text("All changes saved automatically")
+            Text("settings.footer.autoSave".localized)
                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                 .foregroundColor(.gray.opacity(0.5))
         }
@@ -420,6 +429,7 @@ struct CyberpunkSettingsFooter: View {
 // MARK: - Personal Info Content
 struct CyberpunkPersonalInfoContent: View {
     @ObservedObject var enhancedViewModel: EnhancedIncomeViewModel
+    @ObservedObject private var currencyManager = CurrencyManager.shared
     let scrollProxy: ScrollViewProxy
     let initialSection: DeepLinkSection?
     
@@ -428,6 +438,7 @@ struct CyberpunkPersonalInfoContent: View {
     @State private var startTime = Date.createTime(hour: 8, minute: 30)
     @State private var endTime = Date.createTime(hour: 17, minute: 30)
     @State private var selectedDays: Set<String> = ["Mon", "Tue", "Wed", "Thu", "Fri"]
+    @State private var selectedCurrency: SupportedCurrency = CurrencyManager.shared.currentCurrency
     
     // Monthly Goal States
     @State private var goalTitle: String = ""
@@ -444,7 +455,7 @@ struct CyberpunkPersonalInfoContent: View {
             // Financial Information Section
             CyberpunkDeepLinkSection(
                 icon: "dollarsign.circle.fill",
-                title: "Financial Information",
+                title: "settings.financial.title".localized,
                 color: CyberpunkTheme.greenPrimary
             ) {
                 VStack(spacing: 16) {
@@ -458,10 +469,10 @@ struct CyberpunkPersonalInfoContent: View {
                                 )
                                 
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("Monthly Salary")
+                                    Text("settings.salary.title".localized)
                                         .font(.system(size: 14, weight: .bold, design: .monospaced))
                                         .foregroundColor(.white)
-                                    Text("Your gross monthly salary before taxes")
+                                    Text("settings.salary.description".localized)
                                         .font(.system(size: 12, weight: .medium, design: .monospaced))
                                         .foregroundColor(.gray.opacity(0.6))
                                 }
@@ -471,7 +482,7 @@ struct CyberpunkPersonalInfoContent: View {
                                 CyberpunkTextInput(
                                     text: $monthlySalary,
                                     placeholder: "8000",
-                                    suffix: "¥",
+                                    suffix: currencyManager.currencySymbol,
                                     color: salaryError != nil ? CyberpunkTheme.redPrimary : CyberpunkTheme.cyanPrimary
                                 )
                                 .frame(width: 128)
@@ -491,6 +502,38 @@ struct CyberpunkPersonalInfoContent: View {
                         }
                     }
                     
+                    // Currency Selection
+                    CyberpunkSettingsCard {
+                        HStack(spacing: 12) {
+                            CyberpunkIconBadge(
+                                icon: "dollarsign.circle",
+                                color: CyberpunkTheme.yellowPrimary
+                            )
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("settings.currency.title".localized)
+                                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                    .foregroundColor(.white)
+                                Text("settings.currency.description".localized)
+                                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                    .foregroundColor(.gray.opacity(0.6))
+                            }
+                            
+                            Spacer()
+                            
+                            Picker("", selection: $selectedCurrency) {
+                                ForEach(SupportedCurrency.allCases) { currency in
+                                    Text(currency.displayName).tag(currency)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .frame(width: 200)
+                            .onChange(of: selectedCurrency) { _, newValue in
+                                currencyManager.setCurrency(newValue)
+                            }
+                        }
+                    }
+                    
                     // Work Days per Month
                     CyberpunkSettingsCard {
                         HStack(spacing: 12) {
@@ -500,10 +543,10 @@ struct CyberpunkPersonalInfoContent: View {
                             )
                             
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Work Days per Month")
+                                Text("settings.workdays.title".localized)
                                     .font(.system(size: 14, weight: .bold, design: .monospaced))
                                     .foregroundColor(.white)
-                                Text("Average number of working days")
+                                Text("settings.workdays.description".localized)
                                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                                     .foregroundColor(.gray.opacity(0.6))
                             }
@@ -516,7 +559,7 @@ struct CyberpunkPersonalInfoContent: View {
                                     .font(.system(size: 14, weight: .bold, design: .monospaced))
                                     .foregroundColor(CyberpunkTheme.cyanPrimary)
                                 
-                                Text("Days")
+                                Text("common.days".localized)
                                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                                     .foregroundColor(CyberpunkTheme.cyanPrimary.opacity(0.7))
                             }
@@ -539,7 +582,7 @@ struct CyberpunkPersonalInfoContent: View {
             // Work Schedule Section
             CyberpunkDeepLinkSection(
                 icon: "clock.fill",
-                title: "Work Schedule",
+                title: "settings.schedule.title".localized,
                 color: CyberpunkTheme.greenPrimary
             ) {
                 CyberpunkSettingsCard {
@@ -550,7 +593,7 @@ struct CyberpunkPersonalInfoContent: View {
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack(spacing: 6) {
                                     CyberpunkMiniIconBadge(emoji: "🌅", color: CyberpunkTheme.yellowPrimary)
-                                    Text("Start Time")
+                                    Text("settings.startTime.title".localized)
                                         .font(.system(size: 12, weight: .bold, design: .monospaced))
                                         .foregroundColor(.white)
                                 }
@@ -563,7 +606,7 @@ struct CyberpunkPersonalInfoContent: View {
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack(spacing: 6) {
                                     CyberpunkMiniIconBadge(emoji: "🌙", color: CyberpunkTheme.purplePrimary)
-                                    Text("End Time")
+                                    Text("settings.endTime.title".localized)
                                         .font(.system(size: 12, weight: .bold, design: .monospaced))
                                         .foregroundColor(.white)
                                 }
@@ -919,7 +962,7 @@ struct CyberpunkPrivacyContent: View {
             // Privacy Protection Section
             CyberpunkDeepLinkSection(
                 icon: "shield.fill",
-                title: "Privacy Protection",
+                title: "settings.privacy.title".localized,
                 color: CyberpunkTheme.bluePrimary
             ) {
                 CyberpunkSettingsCard(borderColor: CyberpunkTheme.bluePrimary) {
@@ -930,10 +973,10 @@ struct CyberpunkPrivacyContent: View {
                         )
                         
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Enable Privacy Mode")
+                            Text("settings.privacy.enable".localized)
                                 .font(.system(size: 14, weight: .bold, design: .monospaced))
                                 .foregroundColor(.white)
-                            Text("Hide sensitive financial amounts when enabled")
+                            Text("settings.privacy.enableDescription".localized)
                                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                                 .foregroundColor(.gray.opacity(0.6))
                         }
@@ -950,14 +993,14 @@ struct CyberpunkPrivacyContent: View {
                 // Display Mode Section
                 CyberpunkDeepLinkSection(
                     icon: "sparkles",
-                    title: "Display Mode",
+                    title: "settings.privacy.displayMode".localized,
                     color: CyberpunkTheme.cyanPrimary
                 ) {
                     VStack(spacing: 12) {
                         // Emoji Mode
                         CyberpunkPrivacyModeOption(
-                            title: "🎮 Emoji Mode",
-                            description: "Replace amounts with fun emojis - looks like game stats",
+                            title: "settings.privacy.emojiMode".localized,
+                            description: "settings.privacy.emojiDescription".localized,
                             example: "¥12,345 → 🚀🚀⭐✨",
                             isSelected: privacySettings.displayMode == .emoji,
                             isRecommended: true,
@@ -967,8 +1010,8 @@ struct CyberpunkPrivacyContent: View {
                         
                         // Blur Mode
                         CyberpunkPrivacyModeOption(
-                            title: "🌫️ Blur Mode",
-                            description: "Apply gaussian blur effect to amounts",
+                            title: "settings.privacy.blurMode".localized,
+                            description: "settings.privacy.blurDescription".localized,
                             example: nil,
                             isBlurExample: true,
                             isSelected: privacySettings.displayMode == .blur,
@@ -978,9 +1021,9 @@ struct CyberpunkPrivacyContent: View {
                         
                         // Dots Mode
                         CyberpunkPrivacyModeOption(
-                            title: "••• Dots Mode",
-                            description: "Replace all digits with dots (classic style)",
-                            example: "¥12,345 → ¥••,•••",
+                            title: "settings.privacy.dotsMode".localized,
+                            description: "settings.privacy.dotsDescription".localized,
+                            example: "\(CurrencyManager.shared.currencySymbol)12,345 → \(CurrencyManager.shared.currencySymbol)••,•••",
                             isSelected: privacySettings.displayMode == .dots,
                             color: CyberpunkTheme.cyanPrimary,
                             action: { privacySettings.displayMode = .dots }
@@ -992,14 +1035,14 @@ struct CyberpunkPrivacyContent: View {
                     // Emoji Theme Section
                     CyberpunkDeepLinkSection(
                         icon: "sparkles",
-                        title: "Emoji Theme",
+                        title: "settings.privacy.emojiTheme".localized,
                         color: CyberpunkTheme.yellowPrimary
                     ) {
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                             CyberpunkEmojiPresetCard(
                                 emojis: "🍎🍊🍇",
-                                title: "Fruits",
-                                subtitle: "Fresh & healthy",
+                                title: "settings.emoji.fruits".localized,
+                                subtitle: "settings.emoji.fruitsDesc".localized,
                                 isSelected: privacySettings.emojiPreset == .fruits,
                                 color: CyberpunkTheme.greenPrimary,
                                 action: { privacySettings.emojiPreset = .fruits }
@@ -1007,8 +1050,8 @@ struct CyberpunkPrivacyContent: View {
                             
                             CyberpunkEmojiPresetCard(
                                 emojis: "🚀⭐✨",
-                                title: "Rockets",
-                                subtitle: "Space adventure",
+                                title: "settings.emoji.rockets".localized,
+                                subtitle: "settings.emoji.rocketsDesc".localized,
                                 isSelected: privacySettings.emojiPreset == .rockets,
                                 color: CyberpunkTheme.cyanPrimary,
                                 action: { privacySettings.emojiPreset = .rockets }
@@ -1016,8 +1059,8 @@ struct CyberpunkPrivacyContent: View {
                             
                             CyberpunkEmojiPresetCard(
                                 emojis: "💎💰🪙",
-                                title: "Crypto",
-                                subtitle: "Digital wealth",
+                                title: "settings.emoji.crypto".localized,
+                                subtitle: "settings.emoji.cryptoDesc".localized,
                                 isSelected: privacySettings.emojiPreset == .crypto,
                                 color: CyberpunkTheme.yellowPrimary,
                                 action: { privacySettings.emojiPreset = .crypto }
@@ -1025,8 +1068,8 @@ struct CyberpunkPrivacyContent: View {
                             
                             CyberpunkEmojiPresetCard(
                                 emojis: "🔥⚡✨",
-                                title: "Custom",
-                                subtitle: "Your own mix",
+                                title: "settings.emoji.custom".localized,
+                                subtitle: "settings.emoji.customDesc".localized,
                                 isSelected: privacySettings.emojiPreset == .custom,
                                 color: CyberpunkTheme.purplePrimary,
                                 action: { privacySettings.emojiPreset = .custom }
@@ -1066,12 +1109,12 @@ struct CyberpunkNotificationsContent: View {
                         )
                         
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(permissionDenied ? "Notifications Blocked" : "Notifications Disabled")
+                            Text(permissionDenied ? "settings.notifications.blocked".localized : "settings.notifications.disabled".localized)
                                 .font(.system(size: 14, weight: .bold, design: .monospaced))
                                 .foregroundColor(.white)
                             Text(permissionDenied 
-                                 ? "Please enable notifications in System Settings"
-                                 : "Click to enable notification permissions")
+                                 ? "settings.notifications.blockedDesc".localized
+                                 : "settings.notifications.disabledDesc".localized)
                                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                                 .foregroundColor(.gray.opacity(0.6))
                         }
@@ -1080,13 +1123,13 @@ struct CyberpunkNotificationsContent: View {
                         
                         if permissionDenied {
                             // If denied, show button to open System Settings
-                            Button("Open Settings") {
+                            Button("settings.notifications.openSettings".localized) {
                                 notificationService.openNotificationSettings()
                             }
                             .buttonStyle(CyberpunkButtonStyle(color: CyberpunkTheme.cyanPrimary))
                         } else {
                             // Request permission
-                            Button(isRequestingPermission ? "Requesting..." : "Enable") {
+                            Button(isRequestingPermission ? "settings.notifications.requesting".localized : "common.enable".localized) {
                                 requestNotificationPermission()
                             }
                             .buttonStyle(CyberpunkButtonStyle(color: CyberpunkTheme.yellowPrimary))
@@ -1101,17 +1144,17 @@ struct CyberpunkNotificationsContent: View {
                         CyberpunkIconBadge(icon: "checkmark.circle.fill", color: CyberpunkTheme.greenPrimary)
                         
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Notifications Enabled")
+                            Text("settings.notifications.enabled".localized)
                                 .font(.system(size: 14, weight: .bold, design: .monospaced))
                                 .foregroundColor(.white)
-                            Text("You will receive work reminders and alerts")
+                            Text("settings.notifications.enabledDesc".localized)
                                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                                 .foregroundColor(.gray.opacity(0.6))
                         }
                         
                         Spacer()
                         
-                        Button("Manage") {
+                        Button("settings.notifications.manage".localized) {
                             notificationService.openNotificationSettings()
                         }
                         .buttonStyle(CyberpunkButtonStyle(color: CyberpunkTheme.greenPrimary))
@@ -1122,7 +1165,7 @@ struct CyberpunkNotificationsContent: View {
             // Work Reminders Section
             CyberpunkDeepLinkSection(
                 icon: "clock.fill",
-                title: "Work Reminders",
+                title: "settings.notifications.workReminders".localized,
                 color: CyberpunkTheme.yellowPrimary
             ) {
                 VStack(spacing: 16) {
@@ -1132,10 +1175,10 @@ struct CyberpunkNotificationsContent: View {
                             CyberpunkIconBadge(icon: "sunrise.fill", color: CyberpunkTheme.yellowPrimary)
                             
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Work Start Reminder")
+                                Text("settings.notifications.workStart".localized)
                                     .font(.system(size: 14, weight: .bold, design: .monospaced))
                                     .foregroundColor(.white)
-                                Text("Notify 5 minutes before work starts")
+                                Text("settings.notifications.workStartDesc".localized)
                                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                                     .foregroundColor(.gray.opacity(0.6))
                             }
@@ -1155,10 +1198,10 @@ struct CyberpunkNotificationsContent: View {
                             CyberpunkIconBadge(icon: "sunset.fill", color: CyberpunkTheme.orangePrimary)
                             
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Work End Reminder")
+                                Text("settings.notifications.workEnd".localized)
                                     .font(.system(size: 14, weight: .bold, design: .monospaced))
                                     .foregroundColor(.white)
-                                Text("Notify before work hours end")
+                                Text("settings.notifications.workEndDesc".localized)
                                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                                     .foregroundColor(.gray.opacity(0.6))
                             }
@@ -1179,10 +1222,10 @@ struct CyberpunkNotificationsContent: View {
                                 CyberpunkIconBadge(icon: "timer", color: CyberpunkTheme.cyanPrimary)
                                 
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("Reminder Time")
+                                    Text("settings.notifications.reminderTime".localized)
                                         .font(.system(size: 14, weight: .bold, design: .monospaced))
                                         .foregroundColor(.white)
-                                    Text("Minutes before work ends")
+                                    Text("settings.notifications.reminderTimeDesc".localized)
                                         .font(.system(size: 12, weight: .medium, design: .monospaced))
                                         .foregroundColor(.gray.opacity(0.6))
                                 }
@@ -1200,10 +1243,10 @@ struct CyberpunkNotificationsContent: View {
                             CyberpunkIconBadge(icon: "exclamationmark.triangle.fill", color: CyberpunkTheme.redPrimary)
                             
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Overtime Warning")
+                                Text("settings.notifications.overtimeWarning".localized)
                                     .font(.system(size: 14, weight: .bold, design: .monospaced))
                                     .foregroundColor(.white)
-                                Text("Remind you when working overtime")
+                                Text("settings.notifications.overtimeWarningDesc".localized)
                                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                                     .foregroundColor(.gray.opacity(0.6))
                             }
@@ -1222,7 +1265,7 @@ struct CyberpunkNotificationsContent: View {
             // Sound Settings
             CyberpunkDeepLinkSection(
                 icon: "speaker.wave.2.fill",
-                title: "Sound",
+                title: "settings.notifications.sound".localized,
                 color: CyberpunkTheme.purplePrimary
             ) {
                 CyberpunkSettingsCard {
@@ -1230,10 +1273,10 @@ struct CyberpunkNotificationsContent: View {
                         CyberpunkIconBadge(icon: "speaker.wave.2.fill", color: CyberpunkTheme.purplePrimary)
                         
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Notification Sound")
+                            Text("settings.notifications.soundEnabled".localized)
                                 .font(.system(size: 14, weight: .bold, design: .monospaced))
                                 .foregroundColor(.white)
-                            Text("Play sound with notifications")
+                            Text("settings.notifications.soundDesc".localized)
                                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                                 .foregroundColor(.gray.opacity(0.6))
                         }
@@ -1364,16 +1407,53 @@ struct CyberpunkButtonStyle: ButtonStyle {
 struct CyberpunkAdvancedContent: View {
     @ObservedObject private var launchAtLogin = LaunchAtLoginManager.shared
     @ObservedObject private var shortcutManager = KeyboardShortcutManager.shared
+    @ObservedObject private var localizationManager = LocalizationManager.shared
     
     @State private var showResetConfirmation = false
     @State private var updateInterval: Int = 1
+    @State private var selectedLanguage: AppLanguage = LocalizationManager.shared.currentLanguage
     
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
+            // Language Section
+            CyberpunkDeepLinkSection(
+                icon: "globe",
+                title: "settings.advanced.language".localized,
+                color: CyberpunkTheme.cyanPrimary
+            ) {
+                CyberpunkSettingsCard {
+                    HStack(spacing: 12) {
+                        CyberpunkIconBadge(icon: "globe", color: CyberpunkTheme.cyanPrimary)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("settings.advanced.languageTitle".localized)
+                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                .foregroundColor(.white)
+                            Text("settings.advanced.languageDesc".localized)
+                                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                .foregroundColor(.gray.opacity(0.6))
+                        }
+                        
+                        Spacer()
+                        
+                        Picker("", selection: $selectedLanguage) {
+                            ForEach(AppLanguage.allCases) { language in
+                                Text(language.displayName).tag(language)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .frame(width: 160)
+                        .onChange(of: selectedLanguage) { _, newValue in
+                            localizationManager.setLanguage(newValue)
+                        }
+                    }
+                }
+            }
+            
             // Data Management Section
             CyberpunkDeepLinkSection(
                 icon: "externaldrive.fill",
-                title: "Data Management",
+                title: "settings.advanced.dataManagement".localized,
                 color: CyberpunkTheme.purplePrimary
             ) {
                 // Reset All Settings
@@ -1382,17 +1462,17 @@ struct CyberpunkAdvancedContent: View {
                         CyberpunkIconBadge(icon: "trash.fill", color: CyberpunkTheme.redPrimary)
                         
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Reset All Settings")
+                            Text("settings.advanced.resetAll".localized)
                                 .font(.system(size: 14, weight: .bold, design: .monospaced))
                                 .foregroundColor(.white)
-                            Text("Clear all data and restore defaults")
+                            Text("settings.advanced.resetDesc".localized)
                                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                                 .foregroundColor(.gray.opacity(0.6))
                         }
                         
                         Spacer()
                         
-                        Button("Reset") {
+                        Button("common.reset".localized) {
                             showResetConfirmation = true
                         }
                         .buttonStyle(CyberpunkButtonStyle(color: CyberpunkTheme.redPrimary))
@@ -1403,7 +1483,7 @@ struct CyberpunkAdvancedContent: View {
             // Performance Section
             CyberpunkDeepLinkSection(
                 icon: "gauge.with.dots.needle.67percent",
-                title: "Performance",
+                title: "settings.advanced.performance".localized,
                 color: CyberpunkTheme.cyanPrimary
             ) {
                 VStack(spacing: 16) {
@@ -1413,17 +1493,17 @@ struct CyberpunkAdvancedContent: View {
                             CyberpunkIconBadge(icon: "clock.arrow.circlepath", color: CyberpunkTheme.yellowPrimary)
                             
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Update Interval")
+                                Text("settings.advanced.updateInterval".localized)
                                     .font(.system(size: 14, weight: .bold, design: .monospaced))
                                     .foregroundColor(.white)
-                                Text("How often to refresh income (seconds)")
+                                Text("settings.advanced.updateIntervalDesc".localized)
                                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                                     .foregroundColor(.gray.opacity(0.6))
                             }
                             
                             Spacer()
                             
-                            CyberpunkStepper(value: $updateInterval, range: 1...60, unit: "sec")
+                            CyberpunkStepper(value: $updateInterval, range: 1...60, unit: "common.sec".localized)
                         }
                     }
                     
@@ -1433,10 +1513,10 @@ struct CyberpunkAdvancedContent: View {
                             CyberpunkIconBadge(icon: "power", color: CyberpunkTheme.greenPrimary)
                             
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Launch at Login")
+                                Text("settings.advanced.launchAtLogin".localized)
                                     .font(.system(size: 14, weight: .bold, design: .monospaced))
                                     .foregroundColor(.white)
-                                Text("Start Paytick when you log in")
+                                Text("settings.advanced.launchAtLoginDesc".localized)
                                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                                     .foregroundColor(.gray.opacity(0.6))
                             }
@@ -1454,7 +1534,7 @@ struct CyberpunkAdvancedContent: View {
             // Keyboard Shortcuts Section - Only Privacy Toggle (customizable)
             CyberpunkDeepLinkSection(
                 icon: "keyboard",
-                title: "Keyboard Shortcuts",
+                title: "settings.advanced.shortcuts".localized,
                 color: CyberpunkTheme.yellowPrimary
             ) {
                 CyberpunkSettingsCard {
@@ -1463,10 +1543,10 @@ struct CyberpunkAdvancedContent: View {
                             CyberpunkIconBadge(icon: "eye.slash.fill", color: CyberpunkTheme.purplePrimary)
                             
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Toggle Privacy Mode")
+                                Text("settings.advanced.togglePrivacy".localized)
                                     .font(.system(size: 14, weight: .bold, design: .monospaced))
                                     .foregroundColor(.white)
-                                Text("Quickly hide/show income data")
+                                Text("settings.advanced.togglePrivacyDesc".localized)
                                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                                     .foregroundColor(.gray.opacity(0.6))
                             }
@@ -1483,7 +1563,7 @@ struct CyberpunkAdvancedContent: View {
                             }) {
                                 HStack(spacing: 6) {
                                     if shortcutManager.isRecordingShortcut {
-                                        Text("Press keys...")
+                                        Text("settings.advanced.pressKeys".localized)
                                             .font(.system(size: 12, weight: .bold, design: .monospaced))
                                             .foregroundColor(CyberpunkTheme.yellowPrimary)
                                     } else {
@@ -1512,13 +1592,13 @@ struct CyberpunkAdvancedContent: View {
                         
                         // Help text and reset button
                         HStack {
-                            Text("Click the shortcut to customize")
+                            Text("settings.advanced.clickToCustomize".localized)
                                 .font(.system(size: 11, weight: .medium, design: .monospaced))
                                 .foregroundColor(.gray.opacity(0.5))
                             
                             Spacer()
                             
-                            Button("Reset to ⌃⌥P") {
+                            Button("settings.advanced.resetShortcut".localized) {
                                 shortcutManager.resetToDefault()
                             }
                             .font(.system(size: 11, weight: .medium, design: .monospaced))
@@ -1532,13 +1612,13 @@ struct CyberpunkAdvancedContent: View {
             // Debug Section
             CyberpunkDeepLinkSection(
                 icon: "ant.fill",
-                title: "Debug",
+                title: "settings.advanced.debug".localized,
                 color: CyberpunkTheme.orangePrimary
             ) {
                 CyberpunkSettingsCard {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
-                            Text("App Version")
+                            Text("settings.advanced.appVersion".localized)
                                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                                 .foregroundColor(.gray.opacity(0.6))
                             Spacer()
@@ -1550,7 +1630,7 @@ struct CyberpunkAdvancedContent: View {
                         Divider().background(CyberpunkTheme.greenPrimary.opacity(0.2))
                         
                         HStack {
-                            Text("macOS Version")
+                            Text("settings.advanced.macosVersion".localized)
                                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                                 .foregroundColor(.gray.opacity(0.6))
                             Spacer()
@@ -1562,7 +1642,7 @@ struct CyberpunkAdvancedContent: View {
                         Divider().background(CyberpunkTheme.greenPrimary.opacity(0.2))
                         
                         HStack {
-                            Text("Data Storage")
+                            Text("settings.advanced.dataStorage".localized)
                                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                                 .foregroundColor(.gray.opacity(0.6))
                             Spacer()
@@ -1578,13 +1658,13 @@ struct CyberpunkAdvancedContent: View {
             loadAdvancedSettings()
         }
         .onChange(of: updateInterval) { _, _ in saveAdvancedSettings() }
-        .alert("Reset All Settings?", isPresented: $showResetConfirmation) {
-            Button("Cancel", role: .cancel) { }
-            Button("Reset", role: .destructive) {
+        .alert("settings.advanced.resetConfirm".localized, isPresented: $showResetConfirmation) {
+            Button("common.cancel".localized, role: .cancel) { }
+            Button("common.reset".localized, role: .destructive) {
                 resetAllSettings()
             }
         } message: {
-            Text("This will clear all your configuration data. This action cannot be undone.")
+            Text("settings.advanced.resetMessage".localized)
         }
     }
     
@@ -1913,7 +1993,7 @@ struct CyberpunkPrivacyModeOption: View {
                             .foregroundColor(.white)
                         
                         if isRecommended {
-                            Text("RECOMMENDED")
+                            Text("settings.privacy.recommended".localized)
                                 .font(.system(size: 10, weight: .bold, design: .monospaced))
                                 .foregroundColor(CyberpunkTheme.greenPrimary)
                                 .padding(.horizontal, 8)
@@ -2031,7 +2111,7 @@ struct CyberpunkPreviewCard: View {
                 Image(systemName: "terminal.fill")
                     .font(.system(size: 10))
                     .foregroundColor(CyberpunkTheme.yellowPrimary.opacity(0.6))
-                Text("PREVIEW")
+                Text("settings.privacy.preview".localized)
                     .font(.system(size: 10, weight: .bold, design: .monospaced))
                     .foregroundColor(CyberpunkTheme.yellowPrimary.opacity(0.6))
             }

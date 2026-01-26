@@ -1,0 +1,191 @@
+/* 
+  Localizable.strings (English)
+  Paytick
+  
+  English localization file
+*/
+
+// MARK: - Common
+"common.settings" = "Settings";
+"common.quit" = "Quit";
+"common.save" = "Save";
+"common.cancel" = "Cancel";
+"common.done" = "Done";
+"common.reset" = "Reset";
+"common.enable" = "Enable";
+"common.disable" = "Disable";
+"common.days" = "Days";
+"common.min" = "min";
+"common.sec" = "sec";
+
+// MARK: - Language & Currency
+"language.system" = "System Default";
+"currency.system" = "System Default";
+
+// MARK: - Dashboard
+"dashboard.todayGoal" = "Today's Goal";
+"dashboard.monthlyGoal" = "Monthly Goal";
+"dashboard.privacyMode" = "Privacy Mode";
+"dashboard.overtime" = "Overtime";
+"dashboard.estLoss" = "Est. Loss";
+"dashboard.rate" = "Rate";
+"dashboard.overtimeWarning" = "Unpaid overtime detected";
+"dashboard.overtimeHint" = "Consider ending your work session";
+"dashboard.todayEarned" = "Today Earned:";
+"dashboard.progress" = "Progress";
+"dashboard.tapToSetGoal" = "Tap to set a goal";
+"dashboard.trackTarget" = "Track your monthly\nearnings target";
+"dashboard.amountsHidden" = "Amounts hidden";
+"dashboard.visible" = "Visible";
+"dashboard.daysActive" = "%d days active";
+"dashboard.monthly" = "Monthly";
+
+// Work Status (descriptive - translate these)
+"dashboard.working" = "Working";
+"dashboard.lunch" = "Lunch";
+"dashboard.finished" = "Finished";
+"dashboard.notStarted" = "Not Started";
+"dashboard.absent" = "Absent";
+"dashboard.holiday" = "Holiday";
+
+// MARK: - Settings Sidebar
+"settings.title" = "Settings";
+"settings.subtitle" = "Configure your income\ntracking preferences";
+"settings.tab.personal" = "Personal Info";
+"settings.tab.privacy" = "Privacy";
+"settings.tab.notifications" = "Notifications";
+"settings.tab.advanced" = "Advanced";
+
+// MARK: - Settings Headers
+"settings.personal.title" = "Personal Information";
+"settings.personal.subtitle" = "Configure your salary, work schedule, and income tracking preferences";
+"settings.privacy.title" = "Privacy Settings";
+"settings.privacy.subtitle" = "Control how your financial data is displayed and protected";
+"settings.notifications.title" = "Notifications";
+"settings.notifications.subtitle" = "Manage alerts and notification preferences";
+"settings.advanced.title" = "Advanced Settings";
+"settings.advanced.subtitle" = "Advanced configuration options for power users";
+
+// MARK: - Personal Info Section
+"settings.financial.title" = "Financial Information";
+"settings.salary.title" = "Monthly Salary";
+"settings.salary.description" = "Your gross monthly salary before taxes";
+"settings.currency.title" = "Currency";
+"settings.currency.description" = "Select your income currency";
+"settings.workdays.title" = "Work Days per Month";
+"settings.workdays.description" = "Average number of working days";
+
+// MARK: - Work Schedule Section
+"settings.schedule.title" = "Work Schedule";
+"settings.startTime.title" = "Start Time";
+"settings.endTime.title" = "End Time";
+"settings.workingDays.title" = "Working Days";
+"settings.workingDays.description" = "Select your regular working days";
+
+// MARK: - Monthly Goal Section
+"settings.goal.title" = "Monthly Goal";
+"settings.goal.enable" = "Enable Monthly Goal";
+"settings.goal.enableDescription" = "Track progress toward your monthly target";
+"settings.goal.targetAmount" = "Target Amount";
+"settings.goal.targetDescription" = "Monthly income target to achieve";
+"settings.goal.rewardItem" = "Reward Item";
+"settings.goal.rewardDescription" = "What will you buy when reaching the goal?";
+"settings.goal.currentProgress" = "Current Progress";
+
+// MARK: - Privacy Section
+"settings.privacy.enable" = "Enable Privacy Mode";
+"settings.privacy.enableDescription" = "Hide sensitive financial amounts when enabled";
+"settings.privacy.displayMode" = "Display Mode";
+"settings.privacy.emojiMode" = "🎮 Emoji Mode";
+"settings.privacy.emojiDescription" = "Replace amounts with fun emojis - looks like game stats";
+"settings.privacy.blurMode" = "🌫️ Blur Mode";
+"settings.privacy.blurDescription" = "Apply gaussian blur effect to amounts";
+"settings.privacy.dotsMode" = "••• Dots Mode";
+"settings.privacy.dotsDescription" = "Replace all digits with dots (classic style)";
+"settings.privacy.recommended" = "RECOMMENDED";
+"settings.privacy.emojiTheme" = "Emoji Theme";
+"settings.privacy.preview" = "PREVIEW";
+
+// Emoji Presets
+"settings.emoji.fruits" = "Fruits";
+"settings.emoji.fruitsDesc" = "Fresh & healthy";
+"settings.emoji.rockets" = "Rockets";
+"settings.emoji.rocketsDesc" = "Space adventure";
+"settings.emoji.crypto" = "Crypto";
+"settings.emoji.cryptoDesc" = "Digital wealth";
+"settings.emoji.custom" = "Custom";
+"settings.emoji.customDesc" = "Your own mix";
+
+// MARK: - Notifications Section
+"settings.notifications.blocked" = "Notifications Blocked";
+"settings.notifications.blockedDesc" = "Please enable notifications in System Settings";
+"settings.notifications.disabled" = "Notifications Disabled";
+"settings.notifications.disabledDesc" = "Click to enable notification permissions";
+"settings.notifications.enabled" = "Notifications Enabled";
+"settings.notifications.enabledDesc" = "You will receive work reminders and alerts";
+"settings.notifications.openSettings" = "Open Settings";
+"settings.notifications.manage" = "Manage";
+"settings.notifications.requesting" = "Requesting...";
+
+"settings.notifications.workReminders" = "Work Reminders";
+"settings.notifications.workStart" = "Work Start Reminder";
+"settings.notifications.workStartDesc" = "Notify 5 minutes before work starts";
+"settings.notifications.workEnd" = "Work End Reminder";
+"settings.notifications.workEndDesc" = "Notify before work hours end";
+"settings.notifications.reminderTime" = "Reminder Time";
+"settings.notifications.reminderTimeDesc" = "Minutes before work ends";
+"settings.notifications.overtimeWarning" = "Overtime Warning";
+"settings.notifications.overtimeWarningDesc" = "Remind you when working overtime";
+
+"settings.notifications.sound" = "Sound";
+"settings.notifications.soundEnabled" = "Notification Sound";
+"settings.notifications.soundDesc" = "Play sound with notifications";
+
+// MARK: - Advanced Section
+"settings.advanced.language" = "Language";
+"settings.advanced.languageTitle" = "App Language";
+"settings.advanced.languageDesc" = "Select your preferred language";
+
+"settings.advanced.dataManagement" = "Data Management";
+"settings.advanced.resetAll" = "Reset All Settings";
+"settings.advanced.resetDesc" = "Clear all data and restore defaults";
+"settings.advanced.resetConfirm" = "Reset All Settings?";
+"settings.advanced.resetMessage" = "This will clear all your configuration data. This action cannot be undone.";
+
+"settings.advanced.performance" = "Performance";
+"settings.advanced.updateInterval" = "Update Interval";
+"settings.advanced.updateIntervalDesc" = "How often to refresh income (seconds)";
+"settings.advanced.launchAtLogin" = "Launch at Login";
+"settings.advanced.launchAtLoginDesc" = "Start Paytick when you log in";
+
+"settings.advanced.shortcuts" = "Keyboard Shortcuts";
+"settings.advanced.togglePrivacy" = "Toggle Privacy Mode";
+"settings.advanced.togglePrivacyDesc" = "Quickly hide/show income data";
+"settings.advanced.clickToCustomize" = "Click the shortcut to customize";
+"settings.advanced.resetShortcut" = "Reset to ⌃⌥P";
+"settings.advanced.pressKeys" = "Press keys...";
+
+"settings.advanced.debug" = "Debug";
+"settings.advanced.appVersion" = "App Version";
+"settings.advanced.macosVersion" = "macOS Version";
+"settings.advanced.dataStorage" = "Data Storage";
+
+// MARK: - Footer
+"settings.footer.autoSave" = "All changes saved automatically";
+"settings.footer.running" = "RUNNING";
+
+// MARK: - Weekdays
+"weekday.mon" = "Mon";
+"weekday.tue" = "Tue";
+"weekday.wed" = "Wed";
+"weekday.thu" = "Thu";
+"weekday.fri" = "Fri";
+"weekday.sat" = "Sat";
+"weekday.sun" = "Sun";
+
+// MARK: - Validation Errors
+"error.invalidSalary" = "Please enter a valid salary amount";
+"error.invalidGoalAmount" = "Please enter a valid goal amount";
+"error.invalidSchedule" = "End time must be after start time";
+"error.selectOneDay" = "Select at least one day";
+
