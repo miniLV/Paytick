@@ -40,46 +40,99 @@ jobs:
 
           # Import the certificate to the keychain
           security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
           security list-keychain -d user -s $KEYCHAIN_PATH
 
+      - name: Generate ExportOptions.plist
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          cat > Paytick/ExportOptions.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>developer-id</string>
+              <key>teamID</key>
+              <string>${APPLE_TEAM_ID}</string>
+          </dict>
+          </plist>
+          EOF
+
       - name: Build and Archive
+        env:
+          CODE_SIGN_IDENTITY: ${{ secrets.CODE_SIGN_IDENTITY }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           xcodebuild archive \
             -project Paytick/Paytick.xcodeproj \
             -scheme Paytick \
             -configuration Release \
+            -destination "generic/platform=macOS" \
             -archivePath ./build/Paytick.xcarchive \
             CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="${{ secrets.CODE_SIGN_IDENTITY }}" \
+            CODE_SIGN_IDENTITY="$CODE_SIGN_IDENTITY" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
             SKIP_INSTALL=NO
 
       - name: Export App
         run: |
           mkdir -p ./build/Export
-          cp -R ./build/Paytick.xcarchive/Products/Applications/Paytick.app ./build/Export/
+          xcodebuild -exportArchive \
+            -archivePath ./build/Paytick.xcarchive \
+            -exportPath ./build/Export \
+            -exportOptionsPlist Paytick/ExportOptions.plist
 
-      - name: Code Sign App
+      - name: Re-sign with Hardened Runtime
         env:
           CODE_SIGN_IDENTITY: ${{ secrets.CODE_SIGN_IDENTITY }}
         run: |
-          # Re-sign with entitlements if necessary, here we do a deep sign
-          codesign --deep --force --options runtime --sign "$CODE_SIGN_IDENTITY" ./build/Export/Paytick.app
+          # Re-sign with hardened runtime enabled (required for notarization)
+          codesign --deep --force --options runtime \
+            --sign "$CODE_SIGN_IDENTITY" \
+            --entitlements Paytick/Paytick/Paytick.entitlements \
+            ./build/Export/Paytick.app
+          
+          # Verify the signature
+          codesign --verify --verbose ./build/Export/Paytick.app
 
-      # Notarization is currently disabled as it requires Developer ID Application certificate
-      # To enable, uncomment the following step and ensure secrets are set
-      # - name: Notarize App
-      #   env:
-      #     APPLE_ID: ${{ secrets.APPLE_ID }}
-      #     APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
-      #     TEAM_ID: ${{ secrets.TEAM_ID }}
-      #   run: |
-      #     ditto -c -k --keepParent ./build/Export/Paytick.app ./build/Paytick_to_notarize.zip
-      #     xcrun notarytool submit ./build/Paytick_to_notarize.zip --apple-id "$APPLE_ID" --password "$APPLE_ID_PASSWORD" --team-id "$TEAM_ID" --wait
-      #     xcrun stapler staple ./build/Export/Paytick.app
+      - name: Notarize App
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          # Create zip for notarization
+          ditto -c -k --keepParent ./build/Export/Paytick.app ./build/Paytick_notarize.zip
+          
+          # Submit for notarization and wait
+          SUBMISSION_OUTPUT=$(xcrun notarytool submit ./build/Paytick_notarize.zip \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait 2>&1) || true
+          
+          echo "$SUBMISSION_OUTPUT"
+          
+          # Extract submission ID
+          SUBMISSION_ID=$(echo "$SUBMISSION_OUTPUT" | grep "id:" | head -1 | awk '{print $2}')
+          
+          # Check if notarization failed
+          if echo "$SUBMISSION_OUTPUT" | grep -q "status: Invalid"; then
+            echo "Notarization failed. Fetching detailed log..."
+            xcrun notarytool log "$SUBMISSION_ID" \
+              --apple-id "$APPLE_ID" \
+              --password "$APPLE_APP_PASSWORD" \
+              --team-id "$APPLE_TEAM_ID"
+            exit 1
+          fi
+          
+          # Staple the notarization ticket to the app
+          xcrun stapler staple ./build/Export/Paytick.app
 
       - name: Create DMG
         run: |
-          # Use hdiutil to create a professional DMG
           hdiutil create -volname "Paytick" -srcfolder ./build/Export/ -ov -format UDZO Paytick.dmg
 
       - name: Release
