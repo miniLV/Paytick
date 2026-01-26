@@ -2,36 +2,38 @@
 
 ## Git Commit Guidelines
 
-### Language Requirements
-- **Git commit messages MUST be written in English only**
-- No Chinese or other non-English languages in commit messages
-- This applies to both the subject line and the body
+### Language
+- Commit messages MUST be written in English only
+- This applies to both subject line and body
 
-### Commit Message Format
-- Use conventional commit format: `type: description`
-- Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `style`, `perf`
-- Keep subject line under 72 characters
+### Format
+Use conventional commits: `type: description`
+
+**Types:** `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `style`, `perf`
+
+**Rules:**
+- Subject line under 72 characters
 - Use imperative mood ("add feature" not "added feature")
+- No period at end of subject line
 
 ### Examples
 ```
-# Good
-fix: resolve notification timezone issues
-feat: add dark mode support
-refactor: simplify income calculation logic
-
-# Bad
-fix: 修复通知时间问题
-feat: 添加深色模式
+feat: add dark mode support for dashboard
+fix: resolve notification timezone offset issue
+refactor: simplify income calculation by removing lunch deduction
+perf: reduce timer frequency to prevent memory growth
 ```
 
 ## Code Style
 
-### Comments
-- Code comments should be written in English
-- This ensures better readability for international developers
-
-### Swift Conventions
+### Swift
 - Follow Swift API Design Guidelines
 - Use SwiftUI best practices
 - Prefer `calendar.component()` over `dateComponents(in:from:)` for timezone safety
+- All code comments in English
+
+### Architecture
+- Services handle business logic and data persistence
+- ViewModels manage UI state and coordinate services
+- Use Combine for reactive data binding
+- Timer callbacks should use `autoreleasepool` for memory efficiency
