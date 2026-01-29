@@ -15,6 +15,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var iconSettings: PrivacyIconSettings?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
+        LogService.configure()
         let viewModel = IncomeViewModel()
         let privacySettings = PrivacySettings()
         let iconSettings = PrivacyIconSettings()

@@ -201,6 +201,21 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
         clearAllOldNotifications()
         currentWorkdays = workdays
         
+        let calendar = Calendar.current
+        let workdaysText = workdays.map { $0.rawValue }.sorted().joined(separator: ",")
+        LogService.info(
+            "notification_schedule_requested",
+            metadata: [
+                "startHour": String(calendar.component(.hour, from: startTime)),
+                "startMinute": String(calendar.component(.minute, from: startTime)),
+                "endHour": String(calendar.component(.hour, from: endTime)),
+                "endMinute": String(calendar.component(.minute, from: endTime)),
+                "workdays": workdaysText,
+                "reminderMinutes": String(preferences.workEndReminderMinutes),
+                "timeZone": TimeZone.current.identifier
+            ]
+        )
+        
         notificationCenter.getNotificationSettings { [weak self] settings in
             guard let self = self, settings.authorizationStatus == .authorized else { return }
             
@@ -256,6 +271,17 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
                                                  of: todayDate) {
                 let notifyTime = calendar.date(byAdding: .minute, value: -preferences.workEndReminderMinutes, to: todayEndTime)!
                 targetEndNotifyTime = notifyTime > now ? notifyTime : nil
+                
+                LogService.info(
+                    "notification_target_computed",
+                    metadata: [
+                        "now": String(now.timeIntervalSince1970),
+                        "todayEnd": String(todayEndTime.timeIntervalSince1970),
+                        "targetEnd": targetEndNotifyTime == nil ? "nil" : String(notifyTime.timeIntervalSince1970),
+                        "reminderMinutes": String(preferences.workEndReminderMinutes),
+                        "timeZone": TimeZone.current.identifier
+                    ]
+                )
             }
         } else {
             targetEndNotifyTime = nil
@@ -304,6 +330,15 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
            !hasNotificationBeenSentToday(flag: workStartNotificationSentToday) {
             let diff = now.timeIntervalSince(targetStart)
             if diff >= -5 && diff <= 60 {
+                LogService.info(
+                    "notification_fired",
+                    metadata: [
+                        "type": "work_start",
+                        "now": String(now.timeIntervalSince1970),
+                        "target": String(targetStart.timeIntervalSince1970),
+                        "diffSeconds": String(diff)
+                    ]
+                )
                 fireNotification(
                     id: NotificationType.workStart.rawValue,
                     title: "🌅 \(NotificationType.workStart.title)",
@@ -319,6 +354,16 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
            !hasNotificationBeenSentToday(flag: workEndNotificationSentToday) {
             let diff = now.timeIntervalSince(targetEnd)
             if diff >= -5 && diff <= 60 {
+                LogService.info(
+                    "notification_fired",
+                    metadata: [
+                        "type": "work_end",
+                        "now": String(now.timeIntervalSince1970),
+                        "target": String(targetEnd.timeIntervalSince1970),
+                        "diffSeconds": String(diff),
+                        "reminderMinutes": String(preferences.workEndReminderMinutes)
+                    ]
+                )
                 fireNotification(
                     id: NotificationType.workEnd.rawValue,
                     title: "🌙 \(NotificationType.workEnd.title)",
@@ -423,6 +468,14 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
     // MARK: - Preferences Management
     
     func setNotificationPreferences(_ preferences: NotificationPreferences) {
+        LogService.info(
+            "notification_preferences_updated",
+            metadata: [
+                "workStartEnabled": String(preferences.workStartEnabled),
+                "workEndEnabled": String(preferences.workEndEnabled),
+                "reminderMinutes": String(preferences.workEndReminderMinutes)
+            ]
+        )
         objectWillChange.send()
         self.preferences = preferences
         savePreferences()

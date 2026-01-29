@@ -1659,6 +1659,20 @@ struct CyberpunkAdvancedContent: View {
                                 .font(.system(size: 12, weight: .bold, design: .monospaced))
                                 .foregroundColor(CyberpunkTheme.cyanPrimary)
                         }
+                        
+                        Divider().background(CyberpunkTheme.greenPrimary.opacity(0.2))
+                        
+                        HStack {
+                            Text("Log Path")
+                                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                .foregroundColor(.gray.opacity(0.6))
+                            Spacer()
+                            Text(LogService.logDirectoryPath)
+                                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                .foregroundColor(CyberpunkTheme.cyanPrimary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
                     }
                 }
             }
