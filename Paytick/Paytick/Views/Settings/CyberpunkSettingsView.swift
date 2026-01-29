@@ -963,7 +963,7 @@ struct CyberpunkPersonalInfoContent: View {
     private func calculateGoalProgress() -> Double {
         guard let target = Double(goalTargetAmount), target > 0 else { return 0 }
         let currentIncome = enhancedViewModel.getMonthlyAccumulatedIncome()
-        return currentIncome / target
+        return min(currentIncome / target, 1.0)  // Cap at 100%
     }
     
     // Calculate approximate work days based on selected weekly days
@@ -1776,16 +1776,16 @@ struct CyberpunkAdvancedContent: View {
         NotificationService.shared.cancelAllNotifications()
         NotificationService.shared.setNotificationPreferences(NotificationPreferences())
         
-        // Reset user profile and work schedule
+        // Reset user profile and work schedule (use same defaults as @State initial values)
         enhancedViewModel.updateUserProfile(UserProfile(
             name: "User",
-            monthlySalary: 1000,
+            monthlySalary: 8000,
             workdaysPerMonth: 22,
             currency: "CNY"
         ))
         enhancedViewModel.updateWorkSchedule(WorkSchedule(
-            startTime: Date.createTime(hour: 9, minute: 0),
-            endTime: Date.createTime(hour: 18, minute: 0),
+            startTime: Date.createTime(hour: 8, minute: 30),
+            endTime: Date.createTime(hour: 17, minute: 30),
             workdays: [.monday, .tuesday, .wednesday, .thursday, .friday]
         ))
     }
