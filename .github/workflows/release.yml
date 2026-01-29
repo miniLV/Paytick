@@ -20,7 +20,7 @@ jobs:
       - name: Set up Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: latest-stable
+          xcode-version: '16.0'
 
       - name: Install Apple Certificate
         env:
@@ -42,23 +42,14 @@ jobs:
           security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
           security list-keychain -d user -s $KEYCHAIN_PATH
+          echo "Available Code Signing Identities:"
+          security find-identity -v -p codesigning || true
 
-      - name: Generate ExportOptions.plist
-        env:
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      - name: Resolve Swift Package Dependencies
         run: |
-          cat > Paytick/ExportOptions.plist << EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>developer-id</string>
-              <key>teamID</key>
-              <string>${APPLE_TEAM_ID}</string>
-          </dict>
-          </plist>
-          EOF
+          xcodebuild -resolvePackageDependencies \
+            -project Paytick/Paytick.xcodeproj \
+            -scheme Paytick
 
       - name: Build and Archive
         env:
@@ -76,26 +67,63 @@ jobs:
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
             SKIP_INSTALL=NO
 
-      - name: Export App
+      - name: Inspect Archive
         run: |
-          mkdir -p ./build/Export
-          xcodebuild -exportArchive \
-            -archivePath ./build/Paytick.xcarchive \
-            -exportPath ./build/Export \
-            -exportOptionsPlist Paytick/ExportOptions.plist
+          echo "=== Archive Structure ==="
+          ls -la ./build/Paytick.xcarchive/
+          ls -la ./build/Paytick.xcarchive/Products/ || true
+          ls -la ./build/Paytick.xcarchive/Products/Applications/ || true
+          
+          ARCHIVE_INFO="./build/Paytick.xcarchive/Info.plist"
+          if [ -f "$ARCHIVE_INFO" ]; then
+            echo "=== Archive Info.plist ==="
+            cat "$ARCHIVE_INFO"
+          fi
 
-      - name: Re-sign with Hardened Runtime
+      - name: Copy App from Archive
+        run: |
+          # Skip xcodebuild -exportArchive which has issues with SPM frameworks
+          # Instead, copy the app directly from the archive
+          mkdir -p ./build/Export
+          APP_PATH="./build/Paytick.xcarchive/Products/Applications/Paytick.app"
+          
+          if [ -d "$APP_PATH" ]; then
+            cp -R "$APP_PATH" ./build/Export/
+            echo "App copied successfully"
+          else
+            echo "ERROR: App not found at $APP_PATH"
+            echo "Checking alternative locations..."
+            find ./build/Paytick.xcarchive -name "*.app" -type d
+            exit 1
+          fi
+
+      - name: Sign with Hardened Runtime
         env:
           CODE_SIGN_IDENTITY: ${{ secrets.CODE_SIGN_IDENTITY }}
         run: |
-          # Re-sign with hardened runtime enabled (required for notarization)
+          # Sign all frameworks first (if any)
+          FRAMEWORKS_PATH="./build/Export/Paytick.app/Contents/Frameworks"
+          if [ -d "$FRAMEWORKS_PATH" ]; then
+            echo "Signing frameworks..."
+            find "$FRAMEWORKS_PATH" -name "*.framework" -o -name "*.dylib" | while read framework; do
+              codesign --force --options runtime \
+                --sign "$CODE_SIGN_IDENTITY" \
+                "$framework"
+            done
+          fi
+          
+          # Sign the main app with hardened runtime (required for notarization)
           codesign --deep --force --options runtime \
             --sign "$CODE_SIGN_IDENTITY" \
             --entitlements Paytick/Paytick/Paytick.entitlements \
             ./build/Export/Paytick.app
           
           # Verify the signature
-          codesign --verify --verbose ./build/Export/Paytick.app
+          echo "=== Verifying signature ==="
+          codesign --verify --verbose=4 ./build/Export/Paytick.app
+          
+          # Check for hardened runtime
+          codesign -d --verbose=4 ./build/Export/Paytick.app 2>&1 | grep -i runtime || true
 
       - name: Notarize App
         env:
