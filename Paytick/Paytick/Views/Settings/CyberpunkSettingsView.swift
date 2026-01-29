@@ -67,7 +67,7 @@ struct CyberpunkSettingsView: View {
                                 case .notifications:
                                     CyberpunkNotificationsContent()
                                 case .advanced:
-                                    CyberpunkAdvancedContent()
+                                    CyberpunkAdvancedContent(enhancedViewModel: enhancedViewModel)
                                 }
                             }
                             .padding(32)
@@ -422,6 +422,9 @@ struct CyberpunkSettingsFooter: View {
             withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
                 runningPulse = true
             }
+        }
+        .onDisappear {
+            withAnimation(nil) { runningPulse = false }
         }
     }
 }
@@ -1405,12 +1408,14 @@ struct CyberpunkButtonStyle: ButtonStyle {
 
 // MARK: - Advanced Content
 struct CyberpunkAdvancedContent: View {
+    @ObservedObject var enhancedViewModel: EnhancedIncomeViewModel
     @ObservedObject private var launchAtLogin = LaunchAtLoginManager.shared
     @ObservedObject private var shortcutManager = KeyboardShortcutManager.shared
     @ObservedObject private var localizationManager = LocalizationManager.shared
+    @ObservedObject private var currencyManager = CurrencyManager.shared
     
     @State private var showResetConfirmation = false
-    @State private var updateInterval: Int = 1
+    @State private var updateInterval: Int = 30
     @State private var selectedLanguage: AppLanguage = LocalizationManager.shared.currentLanguage
     
     var body: some View {
@@ -1503,11 +1508,14 @@ struct CyberpunkAdvancedContent: View {
                             
                             Spacer()
                             
-                            CyberpunkStepper(value: $updateInterval, range: 1...60, unit: "common.sec".localized)
+                            CyberpunkStepper(value: $updateInterval, range: 10...60, unit: "common.sec".localized)
                         }
                     }
                     
                     // Auto Start (Launch at Login)
+                    // TODO: Hidden until verified in production - see GitHub issue #18
+                    // https://github.com/miniLV/Paytick/issues/18
+                    /*
                     CyberpunkSettingsCard {
                         HStack(spacing: 12) {
                             CyberpunkIconBadge(icon: "power", color: CyberpunkTheme.greenPrimary)
@@ -1528,6 +1536,7 @@ struct CyberpunkAdvancedContent: View {
                                 .scaleEffect(0.8)
                         }
                     }
+                    */
                 }
             }
             
@@ -1622,7 +1631,7 @@ struct CyberpunkAdvancedContent: View {
                                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                                 .foregroundColor(.gray.opacity(0.6))
                             Spacer()
-                            Text("1.0.0 (Build 1)")
+                            Text("\(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0") (Build \(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"))")
                                 .font(.system(size: 12, weight: .bold, design: .monospaced))
                                 .foregroundColor(CyberpunkTheme.cyanPrimary)
                         }
@@ -1670,7 +1679,7 @@ struct CyberpunkAdvancedContent: View {
     
     private func loadAdvancedSettings() {
         updateInterval = UserDefaults.standard.integer(forKey: "updateInterval")
-        if updateInterval == 0 { updateInterval = 1 }
+        if updateInterval < 10 { updateInterval = 10 }
         // Launch at login is managed by LaunchAtLoginManager
         launchAtLogin.refreshStatus()
     }
@@ -1682,14 +1691,37 @@ struct CyberpunkAdvancedContent: View {
     
     private func resetAllSettings() {
         // Clear all UserDefaults
-        let domain = Bundle.main.bundleIdentifier!
-        UserDefaults.standard.removePersistentDomain(forName: domain)
-        UserDefaults.standard.synchronize()
+        if let domain = Bundle.main.bundleIdentifier {
+            UserDefaults.standard.removePersistentDomain(forName: domain)
+        }
         
-        // Reset state
-        updateInterval = 1
+        // Reset to defaults
+        updateInterval = 30
+        saveAdvancedSettings()
         launchAtLogin.isEnabled = false
         shortcutManager.resetToDefault()
+        selectedLanguage = .chinese
+        localizationManager.setLanguage(.chinese)
+        currencyManager.setCurrency(.cny)
+        
+        // Reset notifications: clear pending + reset preferences
+        NotificationService.shared.cancelAllNotifications()
+        NotificationService.shared.setNotificationPreferences(NotificationPreferences())
+        
+        // Reset user profile and work schedule
+        enhancedViewModel.updateUserProfile(UserProfile(
+            name: "User",
+            monthlySalary: 1000,
+            workdaysPerMonth: 22,
+            currency: "CNY"
+        ))
+        enhancedViewModel.updateWorkSchedule(WorkSchedule(
+            startTime: Date.createTime(hour: 9, minute: 0),
+            endTime: Date.createTime(hour: 18, minute: 0),
+            lunchStartTime: Date.createTime(hour: 12, minute: 0),
+            lunchEndTime: Date.createTime(hour: 12, minute: 0),
+            workdays: [.monday, .tuesday, .wednesday, .thursday, .friday]
+        ))
     }
 }
 

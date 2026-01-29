@@ -1,5 +1,33 @@
 # Paytick Project Rules
 
+## Release Process
+
+### How to Release a New Version
+Use the release script to publish a new version:
+
+```bash
+release 1.0.7
+```
+
+Or run the script directly:
+```bash
+./scripts/update-version.sh 1.0.7
+```
+
+This will automatically:
+1. Update `MARKETING_VERSION` in Xcode project
+2. Commit the change
+3. Create tag `v1.0.7`
+4. Push to remote
+
+**Important:** The tag points to the commit with the correct version number, ensuring builds use the right version.
+
+### Setup Release Alias (one-time)
+Add to your `~/.zshrc`:
+```bash
+alias release='./scripts/update-version.sh'
+```
+
 ## Git Commit Guidelines
 
 ### Language

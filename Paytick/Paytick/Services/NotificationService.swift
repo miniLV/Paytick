@@ -26,8 +26,8 @@ struct NotificationPreferences: Codable {
     /// Minutes before work end time to send reminder (default: 5)
     var workEndReminderMinutes: Int = 5
     
-    // Legacy property (kept for compatibility, not actively used)
-    var overtimeWarningEnabled: Bool = false
+    /// Show overtime UI when working past end time (default: true)
+    var overtimeWarningEnabled: Bool = true
     
     init() {}
 }
@@ -245,10 +245,6 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
                                                    of: todayDate) {
                 let notifyTime = calendar.date(byAdding: .minute, value: -5, to: todayStartTime)!
                 targetStartNotifyTime = notifyTime > now ? notifyTime : nil
-                
-                #if DEBUG
-                print("[NotificationService] Start time configured: \(startHour):\(String(format: "%02d", startMinute)), notify at: \(notifyTime), now: \(now)")
-                #endif
             }
         } else {
             targetStartNotifyTime = nil
@@ -260,24 +256,12 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
             let endHour = calendar.component(.hour, from: endTime)
             let endMinute = calendar.component(.minute, from: endTime)
             
-            // Sanity check: if endHour is before typical work hours (e.g., < 12), it might be a timezone bug
-            // Log a warning but still proceed
-            #if DEBUG
-            if endHour < 12 {
-                print("[NotificationService] WARNING: End hour (\(endHour)) is before noon. Possible timezone issue with stored endTime: \(endTime)")
-            }
-            #endif
-            
             if let todayEndTime = calendar.date(bySettingHour: endHour,
                                                  minute: endMinute,
                                                  second: 0,
                                                  of: todayDate) {
                 let notifyTime = calendar.date(byAdding: .minute, value: -preferences.workEndReminderMinutes, to: todayEndTime)!
                 targetEndNotifyTime = notifyTime > now ? notifyTime : nil
-                
-                #if DEBUG
-                print("[NotificationService] End time configured: \(endHour):\(String(format: "%02d", endMinute)), notify at: \(notifyTime), now: \(now)")
-                #endif
             }
         } else {
             targetEndNotifyTime = nil

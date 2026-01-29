@@ -2,14 +2,14 @@
   <img src="docs/images/app_icon.png" width="128" height="128" alt="Paytick Logo">
 </p>
 
-<h1 align="center">Paytick ⌚️💰</h1>
+<h1 align="center">Paytick</h1>
 
 <p align="center">
-  <strong>Every second of your 'slacking' is a contribution to your future iPhone.</strong>
+  <strong>Every second you slack off is another cent toward your next iPhone.</strong>
 </p>
 
 <p align="center">
-  <a href="https://github.com/miniLV/Paytick/releases">Download Latest DMG</a> | English | <a href="README.zh-CN.md">简体中文</a>
+  <a href="https://github.com/miniLV/Paytick/releases">Download DMG</a> | English | <a href="README.zh-CN.md">简体中文</a>
 </p>
 
 <p align="center">
@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/swift-6.0-orange.svg" alt="Swift">
 </p>
 
-Paytick is a **real-time income tracker** specifically designed for macOS. It's more than just a tool; it's a "Cyber Dashboard" that brings a smooth sense of satisfaction to your dull office hours. By converting your salary into ticking numbers, Paytick lets you clearly see the value of every minute and every second.
+A real-time income calculator for your macOS menu bar. Enter your salary and work hours, and it shows how much you've earned so far today.
 
 ---
 
@@ -27,72 +27,75 @@ Paytick is a **real-time income tracker** specifically designed for macOS. It's 
 | Normal State | Privacy Mode | Overtime Alert |
 | :---: | :---: | :---: |
 | ![Normal State](docs/images/normal_state.jpg) | ![Privacy Mode](docs/images/privacy_mode.jpg) | ![Overtime Alert](docs/images/overtime_alert.jpg) |
-| *Track your wealth growth in real-time* | *Protect your salary secrets* | *Stop grinding, Commander!* |
+| *Live earnings* | *Hide the numbers* | *Time to go home* |
 
 ---
 
 ## ✨ Features
 
-### 🟢 Real-time Wealth Ticker
-Watch your balance grow like EXP! Supports "Income per Minute" calculation, making every second of your time quantifiable.
+**Live Income Display** — Shows your current earnings in the menu bar, down to the cent. Calculates your per-minute rate.
 
-### 🎒 Loot & Quest System
-Dreaming of a new iPhone or a fancy camera? Set your **LOOT.ITEM**, and Paytick will sync the progress in real-time. When that bar hits 100%, it's time to "Equip" your reward!
+**Wishlist Tracker** — Want to buy something? Set a target amount and watch the progress bar fill up. iPhone, camera, plane ticket, whatever.
 
-### 🚨 Overtime Red Alert
-Still grinding after hours? Paytick instantly switches to **RED ALERT** mode, calculating the "hidden loss" caused by overtime and reminding you: It's time to embrace life, Commander!
+**Overtime Warning** — Working past your scheduled hours? The interface turns red. A reminder that your hourly rate is getting diluted.
 
-### 🔒 Cyber Privacy Shield
-Coworker walking by? One-click to activate **PRIVACY.SYS**.
-*   **Emoji Mode**: Amounts turn into 🍎🚀⭐, looking like a retro game.
-*   **Gaussian Blur**: Elegantly hide sensitive data.
-*   **Dots Mode**: Simple and direct digit masking.
+**Privacy Mode** — When coworkers lean over:
+- Emoji mode: Numbers become 🍎🚀⭐
+- Blur mode: Gaussian blur overlay
+- Dots mode: Shows ****
 
 ---
 
 ## 🎨 Visual Style
 
-**Cyberpunk Terminal Style**
-*   Neon green (#00FF00) accent with monospaced fonts for that Matrix vibe.
-*   Built-in CRT Scanline filters and random Glitch art effects.
-*   Meticulously crafted details, 1:1 replication from Figma designs.
+Cyberpunk terminal aesthetic. Neon green (#00FF00), monospaced fonts, CRT scanlines, occasional glitch effects. Designed in Figma, implemented pixel-perfect.
 
 ---
 
-## 🛠 How to Use
+## 🛠 Usage
 
-1.  **Configure (PROFILE.CFG)**: Input your monthly salary, work days, and schedule.
-2.  **Start Daemon**: The app runs silently in the menu bar, always ready.
-3.  **Set Goals**: Create a "Wishlist" to give your work concrete meaning.
-4.  **Enjoy Every Second**: Watch the numbers tick, and feel the joy.
-
----
-
-## 🛡 Privacy & Security
-
-*   **100% Local Storage**: All salary and work data are stored locally on your macOS, no internet, no uploads, no tracking.
-*   **Apple Notarized**: This project integrates an automated GitHub Actions signing and notarization workflow. Released DMGs are scanned by Apple for security, ensuring no malware and allowing users to double-click and run directly.
-*   **Open & Transparent**: You can audit the code anytime to ensure total privacy.
+1. Enter your monthly salary, work days, and schedule
+2. App lives in your menu bar
+3. Set savings goals (optional)
+4. Watch the numbers go up
 
 ---
 
-## 🛠 Installation
+## 🛡 Privacy
 
-1.  Go to the [Releases](https://github.com/miniLV/Paytick/releases) page and download the latest `Paytick.dmg`.
-2.  Open the DMG and drag Paytick to your **Applications** folder.
-3.  **First Launch**: Double-click the icon to start. If macOS shows a security warning (for unnotarized versions), right-click the icon and select "Open."
+All data stays on your Mac. No network calls, no uploads, no tracking. Open source, check for yourself.
+
+Apple notarized. Double-click to run.
+
+---
+
+## 📦 Installation
+
+1. Download `Paytick.dmg` from [Releases](https://github.com/miniLV/Paytick/releases)
+2. Drag to Applications
+3. Double-click to open. If macOS complains, right-click and select "Open"
 
 ---
 
 ## 🤝 Contributing
 
-Feel free to open an Issue or submit a Pull Request! Let's make Paytick even cooler together.
+Issues and PRs welcome.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the [MIT License](LICENSE).
+[MIT License](LICENSE)
+
+---
+
+## 💬 A note from the author
+
+Work is just trading time for money. No romance about it. Boss pays, I deliver. Fair deal.
+
+So set yourself a goal. Save up enough, then treat yourself — a nice meal, a new gadget, a trip you've been putting off. Life is hard enough. You need something sweet to keep going.
+
+That's what this tool is for: watch your money add up, know what your time is worth, keep an eye on the clock, and go live your life.
 
 ---
 

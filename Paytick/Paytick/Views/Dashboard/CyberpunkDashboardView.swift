@@ -70,6 +70,11 @@ struct AnimatedIncomeText: View {
             .onAppear {
                 displayedValue = value
             }
+            .onDisappear {
+                // Memory leak fix: Clean up timer when view disappears
+                animationTimer?.invalidate()
+                animationTimer = nil
+            }
     }
     
     private func animateValue(from: Double, to: Double) {
@@ -113,6 +118,7 @@ struct CyberpunkDashboardView: View {
     @State private var targetSection: DeepLinkSection? = nil
     @State private var glitchActive = false
     @State private var scanlinePhase: CGFloat = 0
+    @State private var glitchTimer: Timer?  // Memory leak fix: Store timer reference for cleanup
     
     var body: some View {
         ZStack {
@@ -225,6 +231,13 @@ struct CyberpunkDashboardView: View {
             startGlitchEffect()
             startScanlineAnimation()
         }
+        .onDisappear {
+            // Memory leak fix: Clean up timer when view disappears
+            glitchTimer?.invalidate()
+            glitchTimer = nil
+            // Stop repeatForever animation to release DisplayList objects
+            stopScanlineAnimation()
+        }
         .sheet(isPresented: $showingSettings) {
             CyberpunkSettingsView(
                 enhancedViewModel: enhancedViewModel,
@@ -246,7 +259,9 @@ struct CyberpunkDashboardView: View {
     }
     
     private func startGlitchEffect() {
-        Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { _ in
+        // Memory leak fix: Store timer reference for cleanup in onDisappear
+        glitchTimer?.invalidate()  // Cancel any existing timer
+        glitchTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { _ in
             glitchActive = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 glitchActive = false
@@ -257,6 +272,12 @@ struct CyberpunkDashboardView: View {
     private func startScanlineAnimation() {
         withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
             scanlinePhase = 1
+        }
+    }
+    
+    private func stopScanlineAnimation() {
+        withAnimation(nil) {
+            scanlinePhase = 0
         }
     }
 }
@@ -483,6 +504,9 @@ struct HeroEarningsCard: View {
             withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
                 blinkPhase = true
             }
+        }
+        .onDisappear {
+            withAnimation(nil) { blinkPhase = false }
         }
     }
     
@@ -755,6 +779,11 @@ struct SegmentedProgressBar: View {
         .onAppear {
             for i in 0..<segmentCount {
                 animatedSegments[i] = true
+            }
+        }
+        .onDisappear {
+            for i in 0..<segmentCount {
+                animatedSegments[i] = false
             }
         }
     }
@@ -1177,6 +1206,9 @@ struct TreasureChestIcon: View {
                 sparkle = true
             }
         }
+        .onDisappear {
+            withAnimation(nil) { sparkle = false }
+        }
     }
 }
 
@@ -1296,6 +1328,9 @@ struct PrivacySysContent: View {
             withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
                 sparkle = true
             }
+        }
+        .onDisappear {
+            withAnimation(nil) { sparkle = false }
         }
     }
 }
@@ -1427,6 +1462,9 @@ struct StatusLogContent: View {
                 statusPulse = true
             }
         }
+        .onDisappear {
+            withAnimation(nil) { statusPulse = false }
+        }
     }
 }
 
@@ -1543,6 +1581,9 @@ struct UserAvatarIcon: View {
             withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
                 onlinePulse = true
             }
+        }
+        .onDisappear {
+            withAnimation(nil) { onlinePulse = false }
         }
     }
 }
@@ -1733,6 +1774,9 @@ struct TerminalFooter: View {
             withAnimation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true)) {
                 cursorBlink = true
             }
+        }
+        .onDisappear {
+            withAnimation(nil) { cursorBlink = false }
         }
     }
 }

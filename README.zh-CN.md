@@ -2,14 +2,14 @@
   <img src="docs/images/app_icon.png" width="128" height="128" alt="Paytick Logo">
 </p>
 
-<h1 align="center">Paytick ⌚️💰</h1>
+<h1 align="center">Paytick</h1>
 
 <p align="center">
-  <strong>每一秒的摸鱼，都是在为未来的 iPhone 打工。</strong>
+  <strong>摸鱼的每一秒，都在为下一台 iPhone 攒钱。</strong>
 </p>
 
 <p align="center">
-  <a href="https://github.com/miniLV/Paytick/releases">下载最新版 DMG</a> | <a href="README.md">English</a> | 简体中文
+  <a href="https://github.com/miniLV/Paytick/releases">下载 DMG</a> | <a href="README.md">English</a> | 简体中文
 </p>
 
 <p align="center">
@@ -18,85 +18,87 @@
   <img src="https://img.shields.io/badge/swift-6.0-orange.svg" alt="Swift">
 </p>
 
-Paytick 是一款专为 macOS 设计的**实时收入追踪器**。它不仅是一个工具，更是一个能让你在枯燥办公中找到丝滑快感的“赛博仪表盘”。通过将你的薪水转化为实时跳动的数字，Paytick 让你清晰地看到每一分钟、每一秒钟的价值。
+macOS 菜单栏的实时收入计算器。输入月薪和上下班时间，它会告诉你的每一分钟价值多少钱。
 
 ---
 
 ## 📸 预览
 
-| 正常工作状态 | 隐私模式 | 加班红区预警 |
+| 正常状态 | 隐私模式 | 加班提醒 |
 | :---: | :---: | :---: |
 | ![Normal State](docs/images/normal_state.jpg) | ![Privacy Mode](docs/images/privacy_mode.jpg) | ![Overtime Alert](docs/images/overtime_alert.jpg) |
-| *实时追踪你的财富增值* | *安全守护你的薪资秘密* | *别再卷了，指挥官！* |
+| *实时收入* | *遮住数字* | *该下班了* |
 
 ---
 
-## ✨ 核心特性
+## ✨ 功能
 
-### 🟢 实时财富跳动
-看着余额像经验值一样增长！支持“每分钟收入率”计算，让你的每一秒都变得有据可查。
+**实时收入显示** — 菜单栏显示当前已赚金额，精确到分。支持按分钟计算收入率。
 
-### 🎒 装备奖励系统
-想买新款 iPhone？想买那台心仪的相机？设置你的 **LOOT.ITEM**，Paytick 会实时同步进度。看到进度条涨满的那一刻，就是你“满级出装”的时候！
+**愿望清单** — 想买什么东西？设置目标金额，看进度条慢慢填满。iPhone、相机、机票，随你定。
 
-### 🚨 加班红区预警
-下班时间到了还在卷？Paytick 会立即切入 **RED ALERT** 模式，计算你加班导致的“变相损失”，提醒你：该去拥抱生活了，指挥官！
+**加班提醒** — 过了下班时间还在干活？界面变红，提醒你时薪正在被稀释。
 
-### 🔒 赛博隐私防护
-同事路过？一键开启 **PRIVACY.SYS**。
-*   **Emoji 模式**：金额变成了一串 🍎🚀⭐，看起来像是在玩复古游戏。
-*   **高斯模糊**：优雅地遮盖敏感数据。
-*   **打码模式**：简单粗暴的数字脱敏。
+**隐私保护** — 同事凑过来的时候，一键切换：
+- Emoji 模式：数字变成 🍎🚀⭐
+- 模糊模式：高斯模糊遮盖
+- 打码模式：显示为 ****
 
 ---
 
 ## 🎨 视觉风格
 
-**赛博朋克终端感 (Cyberpunk Terminal Style)**
-*   霓虹绿 (#00FF00) 的主色调，配合等宽字体，充满了黑客帝国既视感。
-*   内置 CRT 扫描线滤镜 (Scanline Overlay) 和随机的 Glitch 故障艺术效果。
-*   全 Figma 1:1 还原的精致细节。
+赛博朋克终端风。霓虹绿主色调 (#00FF00)，等宽字体，CRT 扫描线效果，偶尔来点 Glitch 故障风。
 
 ---
 
-## 🛠 如何使用
+## 🛠 使用方法
 
-1.  **配置档案 (PROFILE.CFG)**: 输入你的月薪、工作天数和上下班时间。
-2.  **启动守护进程 (START DAEMON)**: 应用会在菜单栏静默运行，随时待命。
-3.  **锁定目标 (SET GOAL)**: 创建一个“愿望清单”，赋予工作具体的意义。
-4.  **享受每一秒**: 看着数字跳动，心情也会跟着变好。
-
----
-
-## 🛡 隐私与安全性
-
-*   **100% 本地存储**：所有薪资和工作数据均存储在您的本地 macOS 数据库中，不联网，不上传，不监控。
-*   **Apple 已公证 (Notarized)**：本项目已集成 GitHub Actions 自动化签名与公证流程。发布的 DMG 包已经过 Apple 安全扫描，确保无病毒，用户可放心下载并直接双击运行。
-*   **开源透明**：您可以随时检查代码，确保没有后门。
+1. 输入月薪、工作天数、上下班时间
+2. 应用常驻菜单栏
+3. 设置想买的东西（可选）
+4. 看数字跳
 
 ---
 
-## 🛠 安装指南 (Installation)
+## 🛡 隐私
 
-1.  前往 [Releases](https://github.com/miniLV/Paytick/releases) 页面下载最新的 `Paytick.dmg`。
-2.  打开 DMG 并将 Paytick 拖入 **Applications** (应用程序) 文件夹。
-3.  **初次运行**：双击图标启动。如果系统提示无法验证开发者（针对未公证版本），请右键点击图标选择“打开”。
+所有数据存在本地。不联网，不上传，不追踪。代码开源，随便看。
+
+已通过 Apple 公证，双击即可运行。
+
+---
+
+## 📦 安装
+
+1. 去 [Releases](https://github.com/miniLV/Paytick/releases) 下载 `Paytick.dmg`
+2. 拖进应用程序文件夹
+3. 双击打开。如果提示无法验证，右键选"打开"
 
 ---
 
 ## 🤝 贡献
 
-欢迎提交 Issue 或 Pull Request！让我们一起把 Paytick 做得更酷。
+欢迎 Issue 和 PR。
 
 ---
 
 ## 📄 许可证
 
-本项目采用 [MIT License](LICENSE) 许可证。
+[MIT License](LICENSE)
+
+---
+
+## 💬 写在最后
+
+上班就是拿时间换钱，没什么情怀可言。老板付钱，我出力，公平交易。
+
+所以给自己定个目标吧。攒够多少钱，就奖励自己一顿好吃的、一个新手机、一次说走就走的旅行。日子有点苦，得有点甜头才能走得更远。
+
+这个工具的意义就在这儿：让你看着钱一点点攒起来，了解自己上班的价值，关注下班时间，享受自己的生活吧～
 
 ---
 
 <p align="center">
   Made with ❤️ by <a href="https://github.com/miniLV">miniLV</a>
 </p>
-

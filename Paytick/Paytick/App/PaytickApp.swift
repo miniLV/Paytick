@@ -21,11 +21,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         self.privacySettings = privacySettings
         self.iconSettings = iconSettings
         
-        // Create status bar controller only, remove main window
+        // Create status bar controller only (LSUIElement=YES in Info.plist ensures menu bar only)
         statusBarController = StatusBarController(incomeViewModel: viewModel, privacySettings: privacySettings, iconSettings: iconSettings)
-        
-        // Set as accessory app (no dock icon, status bar only)
-        NSApp.setActivationPolicy(.accessory)
     }
 }
 

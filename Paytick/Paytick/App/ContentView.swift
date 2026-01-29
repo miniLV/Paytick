@@ -22,6 +22,10 @@ class StatusBarController: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private let shortcutManager = KeyboardShortcutManager.shared
     
+    // MARK: - Memory Leak Fix: Store NotificationCenter observer tokens for cleanup
+    private var currencyObserver: NSObjectProtocol?
+    private var languageObserver: NSObjectProtocol?
+    
     @Published var showPopover = false {
         didSet {
             if showPopover {
@@ -52,18 +56,8 @@ class StatusBarController: ObservableObject {
         // Create EnhancedIncomeViewModel and retain reference
         self.enhancedViewModel = EnhancedIncomeViewModel(originalViewModel: incomeViewModel)
         
-        // Initialize popover with Cyberpunk terminal-style UI
+        // Initialize popover (content created on demand to allow proper cleanup)
         self.popover = NSPopover()
-        let popoverView = CyberpunkDashboardView(
-            enhancedViewModel: enhancedViewModel,
-            privacySettings: privacySettings,
-            iconSettings: iconSettings
-        )
-        let hostingController = NSHostingController(rootView: popoverView)
-        // Match exact content size to eliminate gray border
-        hostingController.preferredContentSize = NSSize(width: 400, height: 700)
-        self.popover.contentViewController = hostingController
-        self.popover.contentSize = NSSize(width: 400, height: 700)
         self.popover.behavior = .transient
         
         if let statusBarButton = statusItem.button {
@@ -106,13 +100,13 @@ class StatusBarController: ObservableObject {
             }
             .store(in: &cancellables)
         
-        // Listen for currency changes
-        NotificationCenter.default.addObserver(forName: .currencyDidChange, object: nil, queue: .main) { [weak self] _ in
+        // Listen for currency changes - store token for cleanup
+        currencyObserver = NotificationCenter.default.addObserver(forName: .currencyDidChange, object: nil, queue: .main) { [weak self] _ in
             self?.updateStatusBarDisplay()
         }
         
-        // Listen for language changes
-        NotificationCenter.default.addObserver(forName: .languageDidChange, object: nil, queue: .main) { [weak self] _ in
+        // Listen for language changes - store token for cleanup
+        languageObserver = NotificationCenter.default.addObserver(forName: .languageDidChange, object: nil, queue: .main) { [weak self] _ in
             self?.updateStatusBarDisplay()
         }
         
@@ -142,6 +136,13 @@ class StatusBarController: ObservableObject {
     deinit {
         if let monitor = eventMonitor {
             NSEvent.removeMonitor(monitor)
+        }
+        // Clean up NotificationCenter observers
+        if let observer = currencyObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        if let observer = languageObserver {
+            NotificationCenter.default.removeObserver(observer)
         }
     }
     
@@ -194,6 +195,20 @@ class StatusBarController: ObservableObject {
             return
         }
         
+        // Create fresh SwiftUI view each time to ensure proper cleanup on close
+        // This allows onDisappear to be called, stopping repeatForever animations
+        if popover.contentViewController == nil {
+            let popoverView = CyberpunkDashboardView(
+                enhancedViewModel: enhancedViewModel,
+                privacySettings: privacySettings,
+                iconSettings: iconSettings
+            )
+            let hostingController = NSHostingController(rootView: popoverView)
+            hostingController.preferredContentSize = NSSize(width: 400, height: 700)
+            popover.contentViewController = hostingController
+            popover.contentSize = NSSize(width: 400, height: 700)
+        }
+        
         // Force the content view to layout before showing
         popover.contentViewController?.view.layoutSubtreeIfNeeded()
         
@@ -203,19 +218,12 @@ class StatusBarController: ObservableObject {
             
             // Get fresh button reference
             guard let freshButton = self.statusItem.button else { return }
-            guard let buttonWindow = freshButton.window else { return }
+            guard freshButton.window != nil else { return }
             
             // Use the standardized bounds for consistent positioning
             let bounds = CGRect(x: 0, y: 0, width: freshButton.bounds.width, height: freshButton.bounds.height)
             
-            // Log position for debugging off-screen popover issue
-            let screenPos = buttonWindow.convertToScreen(freshButton.convert(freshButton.bounds, to: nil))
-            
             self.popover.show(relativeTo: bounds, of: freshButton, preferredEdge: .minY)
-            
-            // Log final popover position
-            if let popoverWindow = self.popover.contentViewController?.view.window {
-            }
         }
     }
     
@@ -223,6 +231,10 @@ class StatusBarController: ObservableObject {
         // Notify that popover is closing so Settings sheet can close too
         NotificationCenter.default.post(name: NSNotification.Name("PopoverWillClose"), object: nil)
         self.popover.performClose(nil)
+        
+        // Destroy SwiftUI view to trigger onDisappear and stop repeatForever animations
+        // This prevents RenderBox DisplayList memory leaks from persistent animations
+        popover.contentViewController = nil
     }
     
     
