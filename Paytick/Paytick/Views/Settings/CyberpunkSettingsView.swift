@@ -837,7 +837,6 @@ struct CyberpunkPersonalInfoContent: View {
             }
         }
         .onChange(of: monthlySalary) { _, _ in saveConfiguration() }
-        .onChange(of: monthlySalary) { _, _ in saveConfiguration() }
         .onChange(of: workDays) { _, _ in saveConfiguration() }
         .onChange(of: startTime) { _, _ in saveConfiguration() }
         .onChange(of: endTime) { _, _ in saveConfiguration() }
@@ -846,20 +845,19 @@ struct CyberpunkPersonalInfoContent: View {
             workDays = calculatedWorkDays
             saveConfiguration() 
         }
-        .onChange(of: startTime) { _, _ in saveConfiguration() }
-        .onChange(of: endTime) { _, _ in saveConfiguration() }
-        .onChange(of: selectedDays) { _, _ in saveConfiguration() }
         .onChange(of: goalEnabled) { _, _ in saveGoalSettings() }
         .onChange(of: goalTargetAmount) { _, _ in saveGoalSettings() }
         .onChange(of: goalTitle) { _, _ in saveGoalSettings() }
     }
     
     private func loadCurrentValues() {
+        // Load user profile if exists
         if let profile = enhancedViewModel.userProfile {
             monthlySalary = String(format: "%.0f", profile.monthlySalary)
-            // workDays = profile.workdaysPerMonth // Don't use stored value, use calculated one
+            selectedCurrency = SupportedCurrency(rawValue: profile.currency) ?? .cny
         }
         
+        // Load work schedule if exists
         if let schedule = enhancedViewModel.workSchedule {
             startTime = schedule.startTime
             endTime = schedule.endTime
@@ -882,14 +880,10 @@ struct CyberpunkPersonalInfoContent: View {
         scheduleError = nil
         
         // Validate Salary
+        let validatedSalary: Double
         switch EnhancedIncomeViewModel.validateSalary(monthlySalary) {
         case .success(let salary):
-            if let existingProfile = enhancedViewModel.userProfile {
-                var updatedProfile = existingProfile
-                updatedProfile.monthlySalary = salary
-                updatedProfile.workdaysPerMonth = workDays
-                enhancedViewModel.updateUserProfile(updatedProfile)
-            }
+            validatedSalary = salary
         case .failure(let error):
             salaryError = error.localizedDescription
             return
@@ -898,26 +892,52 @@ struct CyberpunkPersonalInfoContent: View {
         // Validate Schedule
         switch EnhancedIncomeViewModel.validateWorkTimes(start: startTime, end: endTime) {
         case .success:
-            // Convert selected days to Weekday set
-            let weekdays = selectedDays.compactMap { shortName -> Weekday? in
-                Weekday.allCases.first { $0.shortName == shortName }
-            }
-            
-            if weekdays.isEmpty {
-                scheduleError = "Select at least one day"
-                return
-            }
-            
-            if let existingSchedule = enhancedViewModel.workSchedule {
-                var updatedSchedule = existingSchedule
-                updatedSchedule.startTime = startTime
-                updatedSchedule.endTime = endTime
-                updatedSchedule.workdays = Set(weekdays)
-                enhancedViewModel.updateWorkSchedule(updatedSchedule)
-            }
+            break
         case .failure(let error):
             scheduleError = error.localizedDescription
             return
+        }
+        
+        // Convert selected days to Weekday set
+        let weekdays = selectedDays.compactMap { shortName -> Weekday? in
+            Weekday.allCases.first { $0.shortName == shortName }
+        }
+        
+        if weekdays.isEmpty {
+            scheduleError = "Select at least one day"
+            return
+        }
+        
+        // Update or create UserProfile
+        if var existingProfile = enhancedViewModel.userProfile {
+            existingProfile.monthlySalary = validatedSalary
+            existingProfile.workdaysPerMonth = workDays
+            enhancedViewModel.updateUserProfile(existingProfile)
+        } else {
+            // Create new profile if it doesn't exist
+            let newProfile = UserProfile(
+                name: "User",
+                monthlySalary: validatedSalary,
+                workdaysPerMonth: workDays,
+                currency: selectedCurrency.rawValue
+            )
+            enhancedViewModel.updateUserProfile(newProfile)
+        }
+        
+        // Update or create WorkSchedule
+        if var existingSchedule = enhancedViewModel.workSchedule {
+            existingSchedule.startTime = startTime
+            existingSchedule.endTime = endTime
+            existingSchedule.workdays = Set(weekdays)
+            enhancedViewModel.updateWorkSchedule(existingSchedule)
+        } else {
+            // Create new schedule if it doesn't exist
+            let newSchedule = WorkSchedule(
+                startTime: startTime,
+                endTime: endTime,
+                workdays: Set(weekdays)
+            )
+            enhancedViewModel.updateWorkSchedule(newSchedule)
         }
     }
     
