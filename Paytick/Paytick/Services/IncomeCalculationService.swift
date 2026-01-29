@@ -194,7 +194,7 @@ class IncomeCalculationService: IncomeCalculationServiceProtocol, ObservableObje
         let effectiveCurrentTime = min(currentTime, todayEnd)
         
         // Simple calculation: current time - start time
-        // No lunch break deduction - work time is simply (end - start)
+        // Work time is simply (end - start)
         if effectiveCurrentTime > todayStart {
             workedMinutes = effectiveCurrentTime.timeIntervalSince(todayStart) / 60
         }

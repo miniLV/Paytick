@@ -337,8 +337,6 @@ class IncomeViewModel: ObservableObject {
     @Published var workdaysPerMonth: Int = 0
     @Published var startTime: Date = Date()
     @Published var endTime: Date = Date()
-    @Published var lunchStartTime: Date = Date()
-    @Published var lunchEndTime: Date = Date()
     @Published var todayIncome: Double = 0
     @Published var isConfigured: Bool = false
     
@@ -358,8 +356,6 @@ class IncomeViewModel: ObservableObject {
     private let workdaysPerMonthKey = "workdaysPerMonth"
     private let startTimeKey = "startTime"
     private let endTimeKey = "endTime"
-    private let lunchStartTimeKey = "lunchStartTime"
-    private let lunchEndTimeKey = "lunchEndTime"
     private let isConfiguredKey = "isConfigured"
     
     init() {
@@ -385,8 +381,6 @@ class IncomeViewModel: ObservableObject {
         UserDefaults.standard.set(workdaysPerMonth, forKey: workdaysPerMonthKey)
         UserDefaults.standard.set(startTime, forKey: startTimeKey)
         UserDefaults.standard.set(endTime, forKey: endTimeKey)
-        UserDefaults.standard.set(lunchStartTime, forKey: lunchStartTimeKey)
-        UserDefaults.standard.set(lunchEndTime, forKey: lunchEndTimeKey)
         UserDefaults.standard.set(isConfigured, forKey: isConfiguredKey)
     }
     
@@ -396,8 +390,6 @@ class IncomeViewModel: ObservableObject {
         workdaysPerMonth = UserDefaults.standard.integer(forKey: workdaysPerMonthKey)
         startTime = UserDefaults.standard.object(forKey: startTimeKey) as? Date ?? Date()
         endTime = UserDefaults.standard.object(forKey: endTimeKey) as? Date ?? Date()
-        lunchStartTime = UserDefaults.standard.object(forKey: lunchStartTimeKey) as? Date ?? Date()
-        lunchEndTime = UserDefaults.standard.object(forKey: lunchEndTimeKey) as? Date ?? Date()
         isConfigured = UserDefaults.standard.bool(forKey: isConfiguredKey)
         
         if isConfigured {
@@ -406,12 +398,10 @@ class IncomeViewModel: ObservableObject {
     }
     
     // MARK: Private methods
-        /// Calculates total work minutes per day, excluding lunch break
+        /// Calculates total work minutes per day
         private func calculateWorkMinutes() -> Double {
             let totalMinutes = endTime.timeIntervalSince(startTime) / 60
-            let lunchMinutes = lunchEndTime.timeIntervalSince(lunchStartTime) / 60
-            let result = totalMinutes - lunchMinutes
-            return result
+            return totalMinutes
         }
         
         /// Starts the timer to update income calculation every second
@@ -446,26 +436,12 @@ class IncomeViewModel: ObservableObject {
                                      minute: calendar.component(.minute, from: endTime),
                                      second: 0, of: today)!
         
-        let todayLunchStart = calendar.date(bySettingHour: calendar.component(.hour, from: lunchStartTime),
-                                            minute: calendar.component(.minute, from: lunchStartTime),
-                                            second: 0, of: today)!
-        
-        let todayLunchEnd = calendar.date(bySettingHour: calendar.component(.hour, from: lunchEndTime),
-                                          minute: calendar.component(.minute, from: lunchEndTime),
-                                          second: 0, of: today)!
-        
         var workedMinutes = 0.0
         
         if now > todayStart && now <= todayEnd {
-            if now <= todayLunchStart {
-                workedMinutes = now.timeIntervalSince(todayStart) / 60
-            } else if now > todayLunchEnd {
-                workedMinutes = (now.timeIntervalSince(todayStart) - todayLunchEnd.timeIntervalSince(todayLunchStart)) / 60
-            } else {
-                workedMinutes = todayLunchStart.timeIntervalSince(todayStart) / 60
-            }
+            workedMinutes = now.timeIntervalSince(todayStart) / 60
         } else if now > todayEnd {
-            workedMinutes = (todayEnd.timeIntervalSince(todayStart) - todayLunchEnd.timeIntervalSince(todayLunchStart)) / 60
+            workedMinutes = todayEnd.timeIntervalSince(todayStart) / 60
         }
         
         let newIncome = workedMinutes * minuteRate

@@ -12,9 +12,8 @@
 ### Phase 2: Overtime Detection Logic ✅
 - ✅ ValueStreamCalculator with full work status detection
 - ✅ Real-time overtime calculation (100ms updates)
-- ✅ 7 work status types (working, overtime, lunch, holiday, etc.)
+- ✅ 6 work status types (working, overtime, holiday, etc.)
 - ✅ Accurate minute-level time tracking
-- ✅ Lunch break exclusion logic
 
 ### Phase 3: UI Layout Optimization ✅
 - ✅ Window size optimization (680x420 → 780x480)
@@ -66,7 +65,6 @@ UI Components ←─── Published Properties ←─── Real-time Updates
 ### Priority 3: Data Accuracy
 - [ ] Verify minute-rate calculations match across systems
 - [ ] Test edge cases (midnight transitions, DST changes)
-- [ ] Validate lunch break time exclusions
 
 ### Priority 4: Performance Optimization
 - [ ] Optimize 100ms update frequency

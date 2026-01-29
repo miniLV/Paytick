@@ -29,18 +29,14 @@ struct WorkSchedule: Codable, Identifiable {
     let id = UUID()
     var startTime: Date
     var endTime: Date
-    var lunchStartTime: Date
-    var lunchEndTime: Date
     var workdays: Set<Weekday>
     var isActive: Bool
     var createdAt: Date
     var updatedAt: Date
     
-    init(startTime: Date, endTime: Date, lunchStartTime: Date, lunchEndTime: Date, workdays: Set<Weekday> = [.monday, .tuesday, .wednesday, .thursday, .friday]) {
+    init(startTime: Date, endTime: Date, workdays: Set<Weekday> = [.monday, .tuesday, .wednesday, .thursday, .friday]) {
         self.startTime = startTime
         self.endTime = endTime
-        self.lunchStartTime = lunchStartTime
-        self.lunchEndTime = lunchEndTime
         self.workdays = workdays
         self.isActive = true
         self.createdAt = Date()
@@ -49,7 +45,7 @@ struct WorkSchedule: Codable, Identifiable {
     
     var totalWorkMinutesPerDay: Double {
         // Simple calculation: work time = end time - start time
-        // No lunch break deduction
+        // Work time is simply end - start
         // Use calendar.component() which is safer and less prone to timezone issues
         let calendar = Calendar.current
         
@@ -69,7 +65,7 @@ struct WorkSchedule: Codable, Identifiable {
     }
     
     enum CodingKeys: String, CodingKey {
-        case id, startTime, endTime, lunchStartTime, lunchEndTime, workdays, isActive, createdAt, updatedAt
+        case id, startTime, endTime, workdays, isActive, createdAt, updatedAt
     }
 }
 
@@ -163,7 +159,6 @@ struct IncomeData: Codable, Identifiable {
 enum WorkStatus: String, Codable, CaseIterable {
     case notStarted = "Not Started"
     case working = "Working"
-    case lunch = "Lunch Break"
     case overtime = "Overtime"
     case finished = "Finished"
     case absent = "Absent"

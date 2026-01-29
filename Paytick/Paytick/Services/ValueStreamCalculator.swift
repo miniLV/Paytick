@@ -77,7 +77,7 @@ class ValueStreamCalculator: ObservableObject {
         dailyIncome = calculateDailyIncomeForCurrentMonth()
         
         // Calculate value per minute based on daily income and actual daily work minutes from schedule
-        // Uses workSchedule.totalWorkMinutesPerDay which is (endTime - startTime - lunchDuration)
+        // Uses workSchedule.totalWorkMinutesPerDay which is (endTime - startTime)
         // NOT a hardcoded 8 hours!
         let dailyWorkMinutes = workSchedule?.totalWorkMinutesPerDay ?? 480.0 // Fallback to 8 hours only if no schedule
         guard dailyWorkMinutes > 0 else {
@@ -140,7 +140,7 @@ class ValueStreamCalculator: ObservableObject {
         }
         
         // Simple calculation: current time - start time
-        // No lunch break deduction - work time is simply (end - start)
+        // Work time is simply (end - start)
         var workedMinutes = 0.0
         
         if currentTimeMinutes <= endTimeMinutes {
@@ -193,7 +193,7 @@ class ValueStreamCalculator: ObservableObject {
         }
         
         // Simple calculation: current time - start time
-        // No lunch break deduction
+        // Work time is simply (end - start)
         var workedMinutes = currentTimeMinutes - startTimeMinutes
         
         // Cap at end of work day
@@ -232,7 +232,7 @@ class ValueStreamCalculator: ObservableObject {
         let endTimeMinutes = getTimeInMinutes(schedule.endTime)
         
         // Simple work status: before start / working / overtime
-        // No lunch break status
+        // Simple work status: before start / working / overtime
         if currentTimeMinutes < startTimeMinutes {
             currentWorkStatus = .notStarted
             isWorkTime = false

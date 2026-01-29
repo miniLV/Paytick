@@ -1345,7 +1345,6 @@ struct StatusLogContent: View {
     private var statusText: String {
         switch enhancedViewModel.workStatus {
         case .working: return "dashboard.working".localized
-        case .lunch: return "dashboard.lunch".localized
         case .overtime: return "dashboard.overtime".localized
         case .finished: return "dashboard.finished".localized
         case .notStarted: return "dashboard.notStarted".localized
@@ -1357,7 +1356,6 @@ struct StatusLogContent: View {
     private var statusIndicator: String {
         switch enhancedViewModel.workStatus {
         case .working: return "ONLINE"
-        case .lunch: return "BREAK"
         case .overtime: return "OVERTIME"
         case .finished: return "OFFLINE"
         case .notStarted: return "STANDBY"
@@ -1369,7 +1367,6 @@ struct StatusLogContent: View {
     private var statusColor: Color {
         switch enhancedViewModel.workStatus {
         case .working: return CyberpunkTheme.greenPrimary
-        case .lunch: return CyberpunkTheme.orangePrimary
         case .overtime: return CyberpunkTheme.redPrimary
         case .finished: return CyberpunkTheme.bluePrimary
         case .notStarted: return .gray

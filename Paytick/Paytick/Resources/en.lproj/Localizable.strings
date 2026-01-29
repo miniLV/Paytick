@@ -42,7 +42,6 @@
 
 // Work Status (descriptive - translate these)
 "dashboard.working" = "Working";
-"dashboard.lunch" = "Lunch";
 "dashboard.finished" = "Finished";
 "dashboard.notStarted" = "Not Started";
 "dashboard.absent" = "Absent";

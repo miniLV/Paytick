@@ -477,10 +477,6 @@ extension EnhancedIncomeViewModel {
         return workStatus == .working
     }
     
-    var isOnBreak: Bool {
-        return workStatus == .lunch
-    }
-    
     
     var isDayFinished: Bool {
         return workStatus == .finished
@@ -577,8 +573,6 @@ extension EnhancedIncomeViewModel {
             return "clock"
         case .working:
             return "person.fill.viewfinder"
-        case .lunch:
-            return "fork.knife"
         case .overtime:
             return "exclamationmark.triangle.fill"
         case .finished:
@@ -596,8 +590,6 @@ extension EnhancedIncomeViewModel {
             return .gray
         case .working:
             return .green
-        case .lunch:
-            return .orange
         case .overtime:
             return .red
         case .finished:
@@ -709,8 +701,6 @@ extension EnhancedIncomeViewModel {
             let schedule = WorkSchedule(
                 startTime: original.startTime,
                 endTime: original.endTime,
-                lunchStartTime: original.lunchStartTime,
-                lunchEndTime: original.lunchEndTime,
                 workdays: [.monday, .tuesday, .wednesday, .thursday, .friday]
             )
             

@@ -1732,8 +1732,6 @@ struct CyberpunkAdvancedContent: View {
         enhancedViewModel.updateWorkSchedule(WorkSchedule(
             startTime: Date.createTime(hour: 9, minute: 0),
             endTime: Date.createTime(hour: 18, minute: 0),
-            lunchStartTime: Date.createTime(hour: 12, minute: 0),
-            lunchEndTime: Date.createTime(hour: 12, minute: 0),
             workdays: [.monday, .tuesday, .wednesday, .thursday, .friday]
         ))
     }

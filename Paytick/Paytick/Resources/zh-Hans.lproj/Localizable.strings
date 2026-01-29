@@ -42,7 +42,6 @@
 
 // Work Status (descriptive - translate these)
 "dashboard.working" = "工作中";
-"dashboard.lunch" = "午休";
 "dashboard.finished" = "已完成";
 "dashboard.notStarted" = "未开始";
 "dashboard.absent" = "缺勤";
