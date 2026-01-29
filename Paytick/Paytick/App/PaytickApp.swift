@@ -16,6 +16,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         LogService.configure()
+        
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
+        LogService.info("App launched", metadata: [
+            "version": version,
+            "build": build,
+            "system": ProcessInfo.processInfo.operatingSystemVersionString
+        ])
+        
         let viewModel = IncomeViewModel()
         let privacySettings = PrivacySettings()
         let iconSettings = PrivacyIconSettings()
@@ -24,6 +33,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // Create status bar controller only (LSUIElement=YES in Info.plist ensures menu bar only)
         statusBarController = StatusBarController(incomeViewModel: viewModel, privacySettings: privacySettings, iconSettings: iconSettings)
+    }
+    
+    func applicationWillTerminate(_ notification: Notification) {
+        LogService.info("App terminated by user")
     }
 }
 

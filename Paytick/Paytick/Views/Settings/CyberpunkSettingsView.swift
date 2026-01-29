@@ -1235,7 +1235,7 @@ struct CyberpunkNotificationsContent: View {
                                 
                                 Spacer()
                                 
-                                CyberpunkStepper(value: $workEndMinutes, range: 5...60)
+                                CyberpunkStepper(value: $workEndMinutes, range: 0...60)
                             }
                         }
                     }
@@ -1662,28 +1662,47 @@ struct CyberpunkAdvancedContent: View {
                         
                         Divider().background(CyberpunkTheme.greenPrimary.opacity(0.2))
                         
-                        HStack {
-                            Text("Log Path")
-                                .font(.system(size: 12, weight: .medium, design: .monospaced))
-                                .foregroundColor(.gray.opacity(0.6))
-                            Spacer()
-                            Button(action: {
-                                let url = URL(fileURLWithPath: LogService.logDirectoryPath)
-                                NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: url.path)
-                            }) {
-                                HStack(spacing: 4) {
-                                    Text(LogService.logDirectoryPath)
-                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
-                                        .foregroundColor(CyberpunkTheme.cyanPrimary)
-                                        .lineLimit(1)
-                                        .truncationMode(.middle)
-                                    Image(systemName: "folder")
-                                        .font(.system(size: 10))
-                                        .foregroundColor(CyberpunkTheme.cyanPrimary.opacity(0.7))
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text("Log Path")
+                                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                    .foregroundColor(.gray.opacity(0.6))
+                                Spacer()
+                                Button(action: {
+                                    // Hide all popover-related windows immediately to prevent visual glitch
+                                    for window in NSApp.windows {
+                                        if String(describing: type(of: window)).contains("Popover") {
+                                            window.orderOut(nil)
+                                        }
+                                    }
+                                    
+                                    // Open Finder
+                                    let url = URL(fileURLWithPath: LogService.logDirectoryPath)
+                                    NSWorkspace.shared.open(url)
+                                    
+                                    // Then properly close the popover
+                                    NotificationCenter.default.post(name: NSNotification.Name("PopoverWillClose"), object: nil)
+                                }) {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "folder")
+                                            .font(.system(size: 10))
+                                        Text("Open")
+                                            .font(.system(size: 10, weight: .medium))
+                                    }
+                                    .foregroundColor(CyberpunkTheme.cyanPrimary)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(CyberpunkTheme.cyanPrimary.opacity(0.1))
+                                    .cornerRadius(4)
                                 }
+                                .buttonStyle(.plain)
+                                .help("Open logs folder in Finder")
                             }
-                            .buttonStyle(.plain)
-                            .help("Click to open in Finder")
+                            Text(LogService.logDirectoryPath)
+                                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                .foregroundColor(CyberpunkTheme.cyanPrimary.opacity(0.8))
+                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                 }
