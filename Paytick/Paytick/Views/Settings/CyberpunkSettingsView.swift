@@ -1667,11 +1667,23 @@ struct CyberpunkAdvancedContent: View {
                                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                                 .foregroundColor(.gray.opacity(0.6))
                             Spacer()
-                            Text(LogService.logDirectoryPath)
-                                .font(.system(size: 12, weight: .bold, design: .monospaced))
-                                .foregroundColor(CyberpunkTheme.cyanPrimary)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
+                            Button(action: {
+                                let url = URL(fileURLWithPath: LogService.logDirectoryPath)
+                                NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: url.path)
+                            }) {
+                                HStack(spacing: 4) {
+                                    Text(LogService.logDirectoryPath)
+                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                        .foregroundColor(CyberpunkTheme.cyanPrimary)
+                                        .lineLimit(1)
+                                        .truncationMode(.middle)
+                                    Image(systemName: "folder")
+                                        .font(.system(size: 10))
+                                        .foregroundColor(CyberpunkTheme.cyanPrimary.opacity(0.7))
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .help("Click to open in Finder")
                         }
                     }
                 }
