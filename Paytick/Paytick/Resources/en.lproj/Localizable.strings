@@ -39,6 +39,8 @@
 "dashboard.visible" = "Visible";
 "dashboard.daysActive" = "%d days active";
 "dashboard.monthly" = "Monthly";
+"dashboard.setupReminder.title" = "Configure Your Salary";
+"dashboard.setupReminder.description" = "Using default settings. Tap to customize.";
 
 // Work Status (descriptive - translate these)
 "dashboard.working" = "Working";

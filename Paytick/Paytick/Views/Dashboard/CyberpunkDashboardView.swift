@@ -135,6 +135,14 @@ struct CyberpunkDashboardView: View {
                     glitchActive: glitchActive
                 )
                 
+                // Setup Reminder - Show when using default config
+                if enhancedViewModel.isUsingDefaultConfig {
+                    SetupReminderCard(
+                        showingSettings: $showingSettings,
+                        targetSection: $targetSection
+                    )
+                }
+                
                 // 2x2 Grid - Goals & Status
                 LazyVGrid(columns: [
                     GridItem(.flexible(), spacing: 10),
@@ -1949,4 +1957,47 @@ struct GlitchEffect: ViewModifier {
     }
 }
 
-
+// MARK: - Setup Reminder Card
+struct SetupReminderCard: View {
+    @Binding var showingSettings: Bool
+    @Binding var targetSection: DeepLinkSection?
+    
+    var body: some View {
+        Button(action: {
+            targetSection = .financialInfo
+            showingSettings = true
+        }) {
+            HStack(spacing: 12) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(CyberpunkTheme.yellowPrimary)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("dashboard.setupReminder.title".localized)
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundColor(.white)
+                    Text("dashboard.setupReminder.description".localized)
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundColor(.gray.opacity(0.8))
+                }
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(CyberpunkTheme.yellowPrimary.opacity(0.6))
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(CyberpunkTheme.yellowPrimary.opacity(0.1))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(CyberpunkTheme.yellowPrimary.opacity(0.3), lineWidth: 1)
+                    )
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}

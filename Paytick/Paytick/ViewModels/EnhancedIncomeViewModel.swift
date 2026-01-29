@@ -14,6 +14,7 @@ class EnhancedIncomeViewModel: ObservableObject {
     @Published var monthlyAccumulatedIncome: Double = 0.0
     @Published var isConfigured: Bool = false
     @Published var isLoading: Bool = false
+    @Published var isUsingDefaultConfig: Bool = false  // True if user hasn't customized settings yet
     
     // Statistics
     @Published var weeklyStats: WeeklyStats = WeeklyStats()
@@ -139,6 +140,17 @@ class EnhancedIncomeViewModel: ObservableObject {
         incomeCalculationService.updateUserProfile(profile)
         saveUserProfile()
         updateConfiguration()
+        
+        // User has customized config, clear the default config hint
+        markConfigAsCustomized()
+    }
+    
+    /// Mark that user has customized their configuration
+    private func markConfigAsCustomized() {
+        if isUsingDefaultConfig {
+            isUsingDefaultConfig = false
+            UserDefaults.standard.set(true, forKey: "hasUserCustomizedConfig")
+        }
     }
     
     func updateWorkSchedule(_ schedule: WorkSchedule) {
@@ -309,12 +321,45 @@ class EnhancedIncomeViewModel: ObservableObject {
         do {
             userProfile = try repositoryManager.userProfileRepository.load(key: "current")
             workSchedule = try repositoryManager.workScheduleRepository.load(key: "current")
-            updateConfiguration()
-            
-            // Initial notification scheduling on app launch
-            scheduleWorkNotifications()
         } catch {
         }
+        
+        // Check if user has previously customized their config
+        let hasCustomized = UserDefaults.standard.bool(forKey: "hasUserCustomizedConfig")
+        
+        // Create default configuration if none exists (first launch)
+        // This ensures income calculation works immediately
+        if userProfile == nil {
+            let defaultProfile = UserProfile(
+                name: "User",
+                monthlySalary: 8000,
+                workdaysPerMonth: 22,
+                currency: "CNY"
+            )
+            userProfile = defaultProfile
+            try? repositoryManager.userProfileRepository.save(defaultProfile, key: "current")
+            if !hasCustomized {
+                isUsingDefaultConfig = true
+            }
+        }
+        
+        if workSchedule == nil {
+            let defaultSchedule = WorkSchedule(
+                startTime: Date.createTime(hour: 8, minute: 30),
+                endTime: Date.createTime(hour: 17, minute: 30),
+                workdays: [.monday, .tuesday, .wednesday, .thursday, .friday]
+            )
+            workSchedule = defaultSchedule
+            try? repositoryManager.workScheduleRepository.save(defaultSchedule, key: "current")
+            if !hasCustomized {
+                isUsingDefaultConfig = true
+            }
+        }
+        
+        updateConfiguration()
+        
+        // Initial notification scheduling on app launch
+        scheduleWorkNotifications()
         
         // Check for monthly goal reset
         checkMonthlyGoalReset()

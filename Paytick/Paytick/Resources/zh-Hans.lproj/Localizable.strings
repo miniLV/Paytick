@@ -39,6 +39,8 @@
 "dashboard.visible" = "可见";
 "dashboard.daysActive" = "%d 天工作日";
 "dashboard.monthly" = "本月";
+"dashboard.setupReminder.title" = "配置您的薪资信息";
+"dashboard.setupReminder.description" = "当前使用默认设置，点击前往配置";
 
 // Work Status (descriptive - translate these)
 "dashboard.working" = "工作中";
