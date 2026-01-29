@@ -1279,7 +1279,7 @@ struct CyberpunkNotificationsContent: View {
                             Toggle("", isOn: $overtimeEnabled)
                                 .toggleStyle(SwitchToggleStyle(tint: CyberpunkTheme.redPrimary))
                                 .scaleEffect(0.8)
-                                .disabled(!notificationService.permissionGranted)
+                                // No permission needed - this only controls UI display
                         }
                     }
                 }
