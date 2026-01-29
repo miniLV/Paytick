@@ -163,7 +163,7 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
         return settings.authorizationStatus == .denied
     }
     
-    private func checkPermissionStatus() {
+    func checkPermissionStatus() {
         notificationCenter.getNotificationSettings { [weak self] settings in
             DispatchQueue.main.async {
                 self?.permissionGranted = settings.authorizationStatus == .authorized

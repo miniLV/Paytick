@@ -1341,6 +1341,9 @@ struct CyberpunkNotificationsContent: View {
     }
     
     private func checkPermissionStatus() {
+        // Refresh permission granted status
+        notificationService.checkPermissionStatus()
+        // Check if explicitly denied
         Task {
             permissionDenied = await notificationService.checkIfDenied()
         }
