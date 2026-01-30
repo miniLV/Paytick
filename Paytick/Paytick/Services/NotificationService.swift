@@ -1,7 +1,6 @@
 import Foundation
 import UserNotifications
 import AppKit
-import Combine
 
 // MARK: - Notification Service Protocol
 protocol NotificationServiceProtocol {
@@ -38,7 +37,6 @@ enum NotificationType: String, CaseIterable {
     case workEnd = "work_end"
     case rewardAchieved = "reward_achieved"
     case dailyIncome = "daily_income"
-    case scheduleUpdate = "schedule_update"
     case monthlyGoal = "monthly_goal"
     
     var title: String {
@@ -47,7 +45,6 @@ enum NotificationType: String, CaseIterable {
         case .workEnd: return "Time to get off work!"
         case .rewardAchieved: return "Congratulations! Reward Achieved"
         case .dailyIncome: return "Today's Income Update"
-        case .scheduleUpdate: return "Work Schedule Updated"
         case .monthlyGoal: return "Monthly Goal Achieved!"
         }
     }
@@ -60,10 +57,8 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
     
     @Published var preferences: NotificationPreferences = NotificationPreferences()
     @Published var permissionGranted: Bool = false
-    @Published var pendingNotifications: [UNNotificationRequest] = []
     
     private let notificationCenter = UNUserNotificationCenter.current()
-    private var cancellables = Set<AnyCancellable>()
     
     // Timer-based notification system (most reliable approach)
     private var notificationTimer: Timer?
@@ -74,7 +69,6 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
     // Prevent duplicate notifications
     private var workStartNotificationSentToday: Date?
     private var workEndNotificationSentToday: Date?
-    private var scheduleUpdateNotificationSent: Date?
     
     // MARK: - Fun Messages
     private let workStartMessages = [
@@ -298,7 +292,6 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
         let now = Date()
         var calendar = Calendar.current
         calendar.timeZone = TimeZone.current
-        
         // Verify today is still a workday
         let currentWeekday = calendar.component(.weekday, from: now)
         guard let todayWeekday = Weekday.allCases.first(where: { $0.calendarWeekday == currentWeekday }),
@@ -347,6 +340,12 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
         return Calendar.current.isDateInToday(sentDate)
     }
     
+    /// Reset daily notification flags to allow re-fire today after schedule changes.
+    func resetDailyNotificationFlags() {
+        workStartNotificationSentToday = nil
+        workEndNotificationSentToday = nil
+    }
+    
     /// Fire an instant notification
     private func fireNotification(id: String, title: String, body: String) {
         let content = UNMutableNotificationContent()
@@ -360,62 +359,7 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
         notificationCenter.add(request)
     }
     
-    /// Reset notification flags (call when schedule changes)
-    /// Note: Only resets the schedule update flag, NOT the daily work notification flags
-    /// This prevents duplicate work start/end notifications when settings are changed
-    func resetNotificationFlags() {
-        scheduleUpdateNotificationSent = nil
-        // Do NOT reset workStartNotificationSentToday and workEndNotificationSentToday here
-        // These should only reset at midnight (when isDateInToday returns false)
-        // Resetting them here causes duplicate notifications when settings are changed
-    }
-    
-    /// Force reset all notification flags including daily work notifications
-    /// Use this only when you explicitly want to re-enable notifications for today
-    func forceResetAllNotificationFlags() {
-        scheduleUpdateNotificationSent = nil
-        workStartNotificationSentToday = nil
-        workEndNotificationSentToday = nil
-    }
-    
-    /// Send schedule update confirmation
-    func sendScheduleUpdateNotification(endTime: Date, reminderMinutes: Int) {
-        guard permissionGranted else { return }
-        
-        // Prevent duplicate within 5 seconds
-        let now = Date()
-        if let lastSent = scheduleUpdateNotificationSent, now.timeIntervalSince(lastSent) < 5 {
-            return
-        }
-        scheduleUpdateNotificationSent = now
-        
-        // Use calendar with explicit local timezone
-        var calendar = Calendar.current
-        calendar.timeZone = TimeZone.current
-        
-        // Extract hour and minute using local calendar component method (safer than dateComponents(in:from:))
-        let endHour = calendar.component(.hour, from: endTime)
-        let endMinute = calendar.component(.minute, from: endTime)
-        
-        // Calculate reminder time
-        let totalMinutes = endHour * 60 + endMinute - reminderMinutes
-        let reminderHour = max(0, totalMinutes / 60)
-        let reminderMinute = max(0, totalMinutes % 60)
-        
-        // Format times for display
-        let endTimeStr = String(format: "%d:%02d %@", endHour > 12 ? endHour - 12 : (endHour == 0 ? 12 : endHour), endMinute, endHour >= 12 ? "PM" : "AM")
-        let reminderTimeStr = String(format: "%d:%02d %@", reminderHour > 12 ? reminderHour - 12 : (reminderHour == 0 ? 12 : reminderHour), reminderMinute, reminderHour >= 12 ? "PM" : "AM")
-        
-        #if DEBUG
-        print("[NotificationService] Schedule update - End time: \(endHour):\(String(format: "%02d", endMinute)), Reminder: \(reminderMinutes) min before, raw endTime: \(endTime)")
-        #endif
-        
-        fireNotification(
-            id: "\(NotificationType.scheduleUpdate.rawValue)_\(now.timeIntervalSince1970)",
-            title: "✅ \(NotificationType.scheduleUpdate.title)",
-            body: "Work end reminder set for \(reminderTimeStr) (\(reminderMinutes) min before \(endTimeStr))"
-        )
-    }
+    /// Notification flags reset naturally at midnight via isDateInToday checks.
     
     // MARK: - Other Notifications
     
@@ -507,27 +451,8 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
     
     // MARK: - Setup
     
-    // Timer for updating pending notifications - stored to allow cleanup
-    private var pendingNotificationsTimer: Timer?
-    
     private func setupNotificationCenter() {
         notificationCenter.delegate = self
-        updatePendingNotifications()
-        
-        pendingNotificationsTimer?.invalidate()
-        pendingNotificationsTimer = Timer.scheduledTimer(withTimeInterval: 60.0, repeats: true) { [weak self] _ in
-            autoreleasepool {
-                self?.updatePendingNotifications()
-            }
-        }
-    }
-    
-    private func updatePendingNotifications() {
-        notificationCenter.getPendingNotificationRequests { [weak self] requests in
-            DispatchQueue.main.async {
-                self?.pendingNotifications = requests
-            }
-        }
     }
 }
 

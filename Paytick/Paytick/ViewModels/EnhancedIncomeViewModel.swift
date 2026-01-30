@@ -115,7 +115,7 @@ class EnhancedIncomeViewModel: ObservableObject {
     }
     
     @objc private func handleRescheduleRequest() {
-        scheduleWorkNotifications(showConfirmation: false)
+        scheduleWorkNotifications()
     }
     
     // Compatibility initializer for legacy IncomeViewModel
@@ -159,11 +159,8 @@ class EnhancedIncomeViewModel: ObservableObject {
         
         // Only reschedule if schedule actually changed
         if scheduleChanged {
-            notificationService.resetNotificationFlags()
-            
-            // Only show confirmation when END TIME changes (not start time or workdays)
-            // Because the confirmation is about "Work end reminder set for..."
-            scheduleWorkNotifications(showConfirmation: endTimeChanged)
+            notificationService.resetDailyNotificationFlags()
+            scheduleWorkNotifications()
         }
     }
     
@@ -214,8 +211,8 @@ class EnhancedIncomeViewModel: ObservableObject {
             
             // If we have a valid schedule, trigger rescheduling
             if workSchedule != nil {
-                notificationService.resetNotificationFlags()
-                scheduleWorkNotifications(showConfirmation: true)
+                notificationService.resetDailyNotificationFlags()
+                scheduleWorkNotifications()
             }
         }
     }
@@ -314,8 +311,8 @@ class EnhancedIncomeViewModel: ObservableObject {
             workSchedule = try repositoryManager.workScheduleRepository.load(key: "current")
             updateConfiguration()
             
-            // Initial notification scheduling on app launch (no confirmation banner)
-            scheduleWorkNotifications(showConfirmation: false)
+            // Initial notification scheduling on app launch
+            scheduleWorkNotifications()
         } catch {
         }
         
@@ -461,7 +458,7 @@ class EnhancedIncomeViewModel: ObservableObject {
         }
     }
     
-    private func scheduleWorkNotifications(showConfirmation: Bool = false) {
+    private func scheduleWorkNotifications() {
         guard let schedule = workSchedule else { return }
         
         // Schedule work notifications via Timer-based approach
@@ -470,14 +467,6 @@ class EnhancedIncomeViewModel: ObservableObject {
             endTime: schedule.endTime,
             workdays: schedule.workdays
         )
-        
-        // Show confirmation if requested (e.g., manual setting change)
-        if showConfirmation {
-            notificationService.sendScheduleUpdateNotification(
-                endTime: schedule.endTime,
-                reminderMinutes: notificationService.preferences.workEndReminderMinutes
-            )
-        }
     }
 }
 
