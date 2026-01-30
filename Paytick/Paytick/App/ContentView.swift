@@ -59,6 +59,8 @@ class StatusBarController: ObservableObject {
         // Initialize popover (content created on demand to allow proper cleanup)
         self.popover = NSPopover()
         self.popover.behavior = .transient
+        // Set initial size to avoid position jumping on first show
+        self.popover.contentSize = calculatePopoverSize()
         
         if let statusBarButton = statusItem.button {
             statusBarButton.image = NSImage(systemSymbolName: "bitcoinsign.circle.fill", accessibilityDescription: "Paytick")
@@ -109,6 +111,22 @@ class StatusBarController: ObservableObject {
         languageObserver = NotificationCenter.default.addObserver(forName: .languageDidChange, object: nil, queue: .main) { [weak self] _ in
             self?.updateStatusBarDisplay()
         }
+        
+        // Listen for isUsingDefaultConfig changes to update popover size
+        enhancedViewModel.$isUsingDefaultConfig
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updatePopoverSize()
+            }
+            .store(in: &cancellables)
+        
+        // Listen for overtime status changes to update popover size
+        enhancedViewModel.$isOvertime
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updatePopoverSize()
+            }
+            .store(in: &cancellables)
         
         // Initial display update
         updateStatusBarDisplay()
@@ -204,10 +222,15 @@ class StatusBarController: ObservableObject {
                 iconSettings: iconSettings
             )
             let hostingController = NSHostingController(rootView: popoverView)
-            hostingController.preferredContentSize = NSSize(width: 400, height: 700)
+            // Use preferredContentSize for proper content alignment
+            hostingController.sizingOptions = [.preferredContentSize]
             popover.contentViewController = hostingController
-            popover.contentSize = NSSize(width: 400, height: 700)
         }
+        
+        // Always update size before showing (ensures correct height for current state)
+        let size = calculatePopoverSize()
+        popover.contentSize = size
+        popover.contentViewController?.preferredContentSize = size
         
         // Force the content view to layout before showing
         popover.contentViewController?.view.layoutSubtreeIfNeeded()
@@ -225,6 +248,24 @@ class StatusBarController: ObservableObject {
             
             self.popover.show(relativeTo: bounds, of: freshButton, preferredEdge: .minY)
         }
+    }
+    
+    private func calculatePopoverSize() -> NSSize {
+        // Calculate popover height dynamically based on content state
+        // Must match CyberpunkDashboardView.calculateDashboardHeight() exactly
+        let height = CyberpunkDashboardView.calculateDashboardHeight(
+            isUsingDefaultConfig: enhancedViewModel.isUsingDefaultConfig,
+            isOvertime: enhancedViewModel.isOvertime
+        )
+        return NSSize(width: 400, height: height)
+    }
+    
+    private func updatePopoverSize() {
+        // Only update if popover is currently shown to avoid position jumping
+        guard popover.isShown, popover.contentViewController != nil else { return }
+        let size = calculatePopoverSize()
+        popover.contentSize = size
+        popover.contentViewController?.preferredContentSize = size
     }
     
     private func hidePopoverWindow() {

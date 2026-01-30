@@ -848,6 +848,14 @@ struct CyberpunkPersonalInfoContent: View {
         .onChange(of: goalEnabled) { _, _ in saveGoalSettings() }
         .onChange(of: goalTargetAmount) { _, _ in saveGoalSettings() }
         .onChange(of: goalTitle) { _, _ in saveGoalSettings() }
+        .onDisappear {
+            // Mark config as customized when user leaves settings
+            // This handles the case where user's salary is exactly 8000 (no onChange triggered)
+            if enhancedViewModel.isUsingDefaultConfig {
+                enhancedViewModel.isUsingDefaultConfig = false
+                UserDefaults.standard.set(true, forKey: "hasUserCustomizedConfig")
+            }
+        }
     }
     
     private func loadCurrentValues() {

@@ -108,6 +108,31 @@ struct AnimatedIncomeText: View {
     }
 }
 
+// MARK: - Dashboard Layout Constants
+enum DashboardLayout {
+    // Dashboard dimensions
+    static let dashboardWidth: CGFloat = 400
+    
+    // Component heights
+    static let heroCardHeightNormal: CGFloat = 225
+    static let heroCardHeightOvertime: CGFloat = 260
+    static let gridRowHeight: CGFloat = 130
+    static let bottomCardsHeight: CGFloat = 90
+    static let footerHeight: CGFloat = 36
+    static let setupReminderHeight: CGFloat = 54
+    
+    // Spacing
+    static let gridSpacing: CGFloat = 10
+    static let vStackSpacing: CGFloat = 10
+    static let verticalPadding: CGFloat = 10
+    static let horizontalPadding: CGFloat = 12
+    
+    /// Dynamic hero card height based on overtime state
+    static func heroCardHeight(isOvertime: Bool) -> CGFloat {
+        isOvertime ? heroCardHeightOvertime : heroCardHeightNormal
+    }
+}
+
 // MARK: - Main Dashboard View
 struct CyberpunkDashboardView: View {
     @ObservedObject var enhancedViewModel: EnhancedIncomeViewModel
@@ -120,14 +145,42 @@ struct CyberpunkDashboardView: View {
     @State private var scanlinePhase: CGFloat = 0
     @State private var glitchTimer: Timer?  // Memory leak fix: Store timer reference for cleanup
     
+    /// Calculate dashboard height based on current state
+    /// Called by both SwiftUI view and popover to ensure matching sizes
+    static func calculateDashboardHeight(isUsingDefaultConfig: Bool, isOvertime: Bool = false) -> CGFloat {
+        // Component heights
+        let heroHeight = DashboardLayout.heroCardHeight(isOvertime: isOvertime)
+        let gridHeight = DashboardLayout.gridRowHeight * 2 + DashboardLayout.gridSpacing
+        let setupHeight = isUsingDefaultConfig ? DashboardLayout.setupReminderHeight : 0
+        
+        // Sum of all component heights
+        let contentHeight = heroHeight + setupHeight + gridHeight +
+                           DashboardLayout.bottomCardsHeight + DashboardLayout.footerHeight
+        
+        // Spacing: 3 gaps normally, 4 gaps with setup reminder
+        let spacingCount = isUsingDefaultConfig ? 4 : 3
+        let totalSpacing = CGFloat(spacingCount) * DashboardLayout.vStackSpacing
+        
+        // Total = content + spacing + padding (top + bottom)
+        return contentHeight + totalSpacing + DashboardLayout.verticalPadding * 2
+    }
+    
+    /// Current dashboard height based on view state
+    private var dashboardHeight: CGFloat {
+        Self.calculateDashboardHeight(
+            isUsingDefaultConfig: enhancedViewModel.isUsingDefaultConfig,
+            isOvertime: enhancedViewModel.isOvertime
+        )
+    }
+    
     var body: some View {
-        ZStack {
+        ZStack(alignment: .top) {
             // CRT Scanline Effect Overlay
             CRTScanlineOverlay(phase: scanlinePhase)
                 .allowsHitTesting(false)
             
-            // Main Content - Compact spacing
-            VStack(spacing: 10) {
+            // Main Content - Compact spacing, aligned to top
+            VStack(spacing: DashboardLayout.vStackSpacing) {
                 // Hero Card - Earnings Display
                 HeroEarningsCard(
                     enhancedViewModel: enhancedViewModel,
@@ -145,9 +198,9 @@ struct CyberpunkDashboardView: View {
                 
                 // 2x2 Grid - Goals & Status
                 LazyVGrid(columns: [
-                    GridItem(.flexible(), spacing: 10),
-                    GridItem(.flexible(), spacing: 10)
-                ], spacing: 10) {
+                    GridItem(.flexible(), spacing: DashboardLayout.gridSpacing),
+                    GridItem(.flexible(), spacing: DashboardLayout.gridSpacing)
+                ], spacing: DashboardLayout.gridSpacing) {
                     // Today's Goal
                     TerminalCard(
                         headerIcon: "chevron.left.forwardslash.chevron.right",
@@ -194,13 +247,13 @@ struct CyberpunkDashboardView: View {
                 }
                 
                 // Bottom Info Cards - Compact height
-                HStack(spacing: 10) {
+                HStack(spacing: DashboardLayout.vStackSpacing) {
                     // Personal Info
                     TerminalCard(
                         headerIcon: "person.fill",
                         headerLabel: "USER.DAT",
                         headerColor: CyberpunkTheme.cyanPrimary,
-                        fixedHeight: 90
+                        fixedHeight: DashboardLayout.bottomCardsHeight
                     ) {
                         UserDatContent(
                             enhancedViewModel: enhancedViewModel,
@@ -215,7 +268,7 @@ struct CyberpunkDashboardView: View {
                         headerIcon: "calendar",
                         headerLabel: "SCHEDULE.CFG",
                         headerColor: CyberpunkTheme.purplePrimary,
-                        fixedHeight: 90
+                        fixedHeight: DashboardLayout.bottomCardsHeight
                     ) {
                         ScheduleCfgContent(
                             enhancedViewModel: enhancedViewModel,
@@ -228,10 +281,10 @@ struct CyberpunkDashboardView: View {
                 // Footer - Settings & Quit
                 TerminalFooter(showingSettings: $showingSettings, targetSection: $targetSection)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.horizontal, DashboardLayout.horizontalPadding)
+            .padding(.vertical, DashboardLayout.verticalPadding)
         }
-        .frame(width: 400)
+        .frame(width: DashboardLayout.dashboardWidth, height: dashboardHeight)
         .background(CyberpunkTheme.panelBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.8), radius: 15, x: 0, y: 10)
@@ -500,7 +553,7 @@ struct HeroEarningsCard: View {
             }
         )
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .frame(height: 260) // Fixed height to prevent jumping between modes
+        .frame(height: DashboardLayout.heroCardHeight(isOvertime: shouldShowOvertimeMode), alignment: .top) // Dynamic height based on mode
         .shadow(
             color: shouldShowOvertimeMode
                 ? CyberpunkTheme.redPrimary.opacity(0.15)
@@ -802,7 +855,7 @@ struct TerminalCard<Content: View>: View {
     let headerIcon: String
     let headerLabel: String
     let headerColor: Color
-    var fixedHeight: CGFloat? = 130 // Default fixed height for uniform cards (compact)
+    var fixedHeight: CGFloat? = DashboardLayout.gridRowHeight // Default fixed height for uniform cards (compact)
     @ViewBuilder let content: () -> Content
     
     @State private var isHovered = false
