@@ -26,7 +26,7 @@ macOS 菜单栏的实时收入计算器。输入月薪和上下班时间，它�
 
 | 正常状态 | 隐私模式 | 加班提醒 |
 | :---: | :---: | :---: |
-| ![Normal State](docs/images/normal_state.jpg) | ![Privacy Mode](docs/images/privacy_mode.jpg) | ![Overtime Alert](docs/images/overtime_alert.jpg) |
+| ![Normal State](docs/images/normal_state.png) | ![Privacy Mode](docs/images/privacy_mode.png) | ![Overtime Alert](docs/images/overtime_alert.jpg) |
 | *实时收入* | *遮住数字* | *该下班了* |
 
 ---
