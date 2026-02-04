@@ -13,11 +13,13 @@ final class PaytickLogFileManager: DDLogFileManagerDefault {
     }
     
     override var newLogFileName: String {
-        return "paytick_\(launchTimestamp).log"
+        return "\(launchTimestamp).log"
     }
     
     override func isLogFile(withName fileName: String) -> Bool {
-        return fileName.hasPrefix("paytick_") && fileName.hasSuffix(".log")
+        // Match pattern: YYYY-MM-DD_HH-mm-ss.log
+        let pattern = #"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.log$"#
+        return fileName.range(of: pattern, options: .regularExpression) != nil
     }
 }
 

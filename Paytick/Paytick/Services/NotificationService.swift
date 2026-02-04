@@ -70,6 +70,9 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
     private var workStartNotificationSentToday: Date?
     private var workEndNotificationSentToday: Date?
     
+    // Cancellable work item for delayed initial check
+    private var initialCheckWorkItem: DispatchWorkItem?
+    
     // MARK: - Fun Messages
     private let workStartMessages = [
         "☕️ A new day begins! Time to grind~",
@@ -100,9 +103,79 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
         setupNotificationCenter()
         checkPermissionStatus()
         setupSystemObservers()
-        clearAllOldNotifications()
+        
+        // CRITICAL: Clear all old notifications immediately on init
+        // This fixes the bug where old UNCalendarNotificationTrigger-based notifications
+        // from previous versions (before 2025-12-26) had timezone issues and would fire
+        // at wrong times (e.g., 9:25 AM instead of 17:25 due to UTC vs local time)
+        clearAllOldNotificationsSync()
+        
+        // Schedule additional cleanup attempts in case macOS needs time to sync
+        for delay in [1.0, 3.0, 5.0, 10.0] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                self?.notificationCenter.removeAllPendingNotificationRequests()
+            }
+        }
     }
     
+    /// Synchronously clear all notifications first, then verify asynchronously
+    private func clearAllOldNotificationsSync() {
+        LogService.info("notification_cleanup_start", metadata: [:])
+        
+        // First, log what's pending BEFORE clearing (async, but we clear immediately after)
+        notificationCenter.getPendingNotificationRequests { requests in
+            if !requests.isEmpty {
+                for request in requests {
+                    let triggerDesc: String
+                    if let calTrigger = request.trigger as? UNCalendarNotificationTrigger {
+                        triggerDesc = "calendar:\(calTrigger.dateComponents)"
+                    } else if let timeTrigger = request.trigger as? UNTimeIntervalNotificationTrigger {
+                        triggerDesc = "interval:\(timeTrigger.timeInterval)"
+                    } else {
+                        triggerDesc = "unknown"
+                    }
+                    LogService.info(
+                        "notification_found_pending",
+                        metadata: [
+                            "id": request.identifier,
+                            "title": request.content.title,
+                            "trigger": triggerDesc
+                        ]
+                    )
+                }
+            }
+        }
+        
+        // Synchronous clear - this happens immediately
+        notificationCenter.removeAllPendingNotificationRequests()
+        notificationCenter.removeAllDeliveredNotifications()
+        
+        // Also clear delivered notifications from notification center
+        notificationCenter.getDeliveredNotifications { delivered in
+            if !delivered.isEmpty {
+                LogService.info(
+                    "notification_found_delivered",
+                    metadata: ["count": String(delivered.count)]
+                )
+            }
+        }
+        
+        // Verify after a short delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.notificationCenter.getPendingNotificationRequests { requests in
+                LogService.info(
+                    "notification_cleanup_done",
+                    metadata: ["remaining": String(requests.count)]
+                )
+                if !requests.isEmpty {
+                    // If still have pending, try again
+                    UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+                }
+            }
+        }
+    }
+    
+    /// Clear notifications when scheduling new ones
     private func clearAllOldNotifications() {
         notificationCenter.removeAllPendingNotificationRequests()
         notificationCenter.removeAllDeliveredNotifications()
@@ -123,10 +196,50 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
             name: NSNotification.Name.NSSystemTimeZoneDidChange,
             object: nil
         )
+        
+        // Also clear notifications when app becomes active
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appDidBecomeActive),
+            name: NSApplication.didBecomeActiveNotification,
+            object: nil
+        )
     }
     
     @objc private func systemTimeChanged() {
         NotificationCenter.default.post(name: NSNotification.Name("RequestNotificationReschedule"), object: nil)
+    }
+    
+    @objc private func appDidBecomeActive() {
+        // Clear only legacy notifications (those with timestamp suffix like "work_end_1234567890")
+        // Current version uses simple identifiers like "work_end" without timestamp
+        notificationCenter.getPendingNotificationRequests { [weak self] requests in
+            let legacyIdentifiers = requests.filter { request in
+                let id = request.identifier
+                // Legacy format: "work_end_<timestamp>" or "workEnd_<timestamp>" or "workStart_<timestamp>"
+                return id.contains("_") && (
+                    id.hasPrefix("work_end_") ||
+                    id.hasPrefix("work_start_") ||
+                    id.hasPrefix("workEnd_") ||
+                    id.hasPrefix("workStart_") ||
+                    id.hasPrefix("daily_") ||
+                    id.hasPrefix("overtime_") ||
+                    id.hasPrefix("reward_achieved_")  // Keep this one, it's still valid format
+                    // Note: current valid ids are just "work_end" and "work_start" without underscore suffix
+                )
+            }.map { $0.identifier }
+            
+            if !legacyIdentifiers.isEmpty {
+                LogService.info(
+                    "notification_clearing_legacy",
+                    metadata: [
+                        "count": String(legacyIdentifiers.count),
+                        "ids": legacyIdentifiers.joined(separator: ", ")
+                    ]
+                )
+                self?.notificationCenter.removePendingNotificationRequests(withIdentifiers: legacyIdentifiers)
+            }
+        }
     }
     
     // MARK: - Permission Management
@@ -253,7 +366,20 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
                                                    second: 0,
                                                    of: todayDate) {
                 let notifyTime = calendar.date(byAdding: .minute, value: -5, to: todayStartTime)!
-                targetStartNotifyTime = notifyTime > now ? notifyTime : nil
+                let willSet = notifyTime > now
+                targetStartNotifyTime = willSet ? notifyTime : nil
+                
+                LogService.info(
+                    "notification_start_target_computed",
+                    metadata: [
+                        "now": String(now.timeIntervalSince1970),
+                        "todayStart": String(todayStartTime.timeIntervalSince1970),
+                        "notifyTime": String(notifyTime.timeIntervalSince1970),
+                        "willSet": String(willSet),
+                        "startHour": String(startHour),
+                        "startMinute": String(startMinute)
+                    ]
+                )
             }
         } else {
             targetStartNotifyTime = nil
@@ -304,14 +430,21 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
         
         // Delay the first check by 2 seconds to avoid immediate triggering when settings change
         // This prevents false positives when the user is actively adjusting notification times
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+        // Use DispatchWorkItem so we can cancel it if timer is stopped before it fires
+        let workItem = DispatchWorkItem { [weak self] in
             self?.checkAndFireNotifications()
         }
+        initialCheckWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: workItem)
     }
     
     private func stopNotificationTimer() {
         notificationTimer?.invalidate()
         notificationTimer = nil
+        
+        // Cancel any pending initial check to prevent duplicate notifications
+        initialCheckWorkItem?.cancel()
+        initialCheckWorkItem = nil
     }
     
     private func checkAndFireNotifications() {
@@ -329,14 +462,25 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
         if let targetStart = targetStartNotifyTime,
            !hasNotificationBeenSentToday(flag: workStartNotificationSentToday) {
             let diff = now.timeIntervalSince(targetStart)
-            if diff >= -5 && diff <= 60 {
+            
+            // Log when approaching target (within 5 minutes) for debugging
+            if diff >= -300 && diff <= 300 {
                 LogService.info(
-                    "notification_fired",
+                    "notification_timer_approaching",
                     metadata: [
                         "type": "work_start",
-                        "now": String(now.timeIntervalSince1970),
-                        "target": String(targetStart.timeIntervalSince1970),
-                        "diffSeconds": String(diff)
+                        "diffSeconds": String(format: "%.1f", diff),
+                        "inWindow": String(diff >= -5 && diff <= 60)
+                    ]
+                )
+            }
+            
+            if diff >= -5 && diff <= 60 {
+                LogService.info(
+                    "notification_check_triggered",
+                    metadata: [
+                        "type": "work_start",
+                        "diffSeconds": String(format: "%.1f", diff)
                     ]
                 )
                 fireNotification(
@@ -355,12 +499,10 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
             let diff = now.timeIntervalSince(targetEnd)
             if diff >= -5 && diff <= 60 {
                 LogService.info(
-                    "notification_fired",
+                    "notification_check_triggered",
                     metadata: [
                         "type": "work_end",
-                        "now": String(now.timeIntervalSince1970),
-                        "target": String(targetEnd.timeIntervalSince1970),
-                        "diffSeconds": String(diff),
+                        "diffSeconds": String(format: "%.1f", diff),
                         "reminderMinutes": String(preferences.workEndReminderMinutes)
                     ]
                 )
@@ -393,6 +535,16 @@ class NotificationService: NSObject, NotificationServiceProtocol, ObservableObje
     
     /// Fire an instant notification
     private func fireNotification(id: String, title: String, body: String) {
+        // Log actual notification send - this is the source of truth
+        LogService.info(
+            "notification_sent",
+            metadata: [
+                "id": id,
+                "title": title,
+                "body": body
+            ]
+        )
+        
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
