@@ -30,7 +30,7 @@ A **real-time salary calculator** that lives in your macOS menu bar. Enter your 
 
 | Normal State | Privacy Mode | Overtime Alert |
 | :---: | :---: | :---: |
-| ![Normal State](docs/images/normal_state.png) | ![Privacy Mode](docs/images/privacy_mode.png) | ![Overtime Alert](docs/images/overtime_alert.jpg) |
+| ![Normal State](docs/images/normal_state.png?v=2) | ![Privacy Mode](docs/images/privacy_mode.png) | ![Overtime Alert](docs/images/overtime_alert.jpg) |
 | *Live earnings* | *Hide the numbers* | *Time to go home* |
 
 ---

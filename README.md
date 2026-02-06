@@ -30,7 +30,7 @@
 
 | 正常状态 | 隐私模式 | 加班提醒 |
 | :---: | :---: | :---: |
-| ![Normal State](docs/images/normal_state.png) | ![Privacy Mode](docs/images/privacy_mode.png) | ![Overtime Alert](docs/images/overtime_alert.jpg) |
+| ![Normal State](docs/images/normal_state.png?v=2) | ![Privacy Mode](docs/images/privacy_mode.png) | ![Overtime Alert](docs/images/overtime_alert.jpg) |
 | *实时收入跳动* | *一键遮住数字* | *该下班了！* |
 
 ---
